@@ -31,10 +31,6 @@ function createBoard(options: BoardOption[]) {
 }
 
 function App() {
-  const [boardDate] = useState(() => new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date()))
   const [view, setView] = useState<View>('board')
   const [options, setOptions] = useState<BoardOption[]>([])
   const [board, setBoard] = useState<BoardOption[]>([])
@@ -138,7 +134,6 @@ function App() {
           </div>
         </div>
         <div className="flex flex-1 flex-col px-4 py-7">
-          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Workspace</p>
           <SidebarItem icon={<LayoutDashboard size={17} />} label="Board" active={view === 'board'} onClick={() => setView('board')} />
           {isAdmin && <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />}
         </div>
@@ -173,11 +168,11 @@ function App() {
         {view === 'board' ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-              <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
+              <div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call deblingo!</p></div>
               <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 25</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
             </div>
             <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
-              <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a0a9b8]">{boardDate} · live board</p><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
+              <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {board.map((option, index) => {
                   const isMarked = marked.includes(option.id)
