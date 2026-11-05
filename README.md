@@ -14,6 +14,8 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql) instead.
+
 4. Open **Project Settings → API** in Supabase. Copy `.env.example` to `.env.local` and fill in:
 
    ```text
@@ -25,13 +27,20 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 5. Create an admin user in **Authentication → Users → Add user**.
 
-6. In **SQL Editor**, promote that user by replacing the UUID and running:
+6. In **SQL Editor**, assign the user a username and promote that user by replacing the UUID and running:
 
    ```sql
+   update public.profiles
+   set username = 'ruben', is_admin = true
+   where id = 'YOUR_AUTH_USER_UUID';
+
+   -- Or promote the user without a username:
    insert into public.profiles (id, is_admin)
    values ('YOUR_AUTH_USER_UUID', true)
    on conflict (id) do update set is_admin = true;
    ```
+
+   Usernames must be 3–30 characters and contain only letters, numbers, and underscores. Admins can sign in with either their username or their Supabase email.
 
 7. Start the app:
 
