@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -84,6 +85,7 @@ function App() {
   const [clock, setClock] = useState(() => new Date());
   const [adminMode, setAdminMode] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const skipHistorySave = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -244,6 +246,11 @@ function App() {
   }, [activeLecture, upcomingLecture, boardAvailable, options]);
 
   useEffect(() => {
+    if (skipHistorySave.current) {
+      skipHistorySave.current = false;
+      return;
+    }
+    if (adminMode) return;
     if (!activeLecture || !board.length) return;
 
     const entry: HistoryEntry = {
@@ -296,7 +303,7 @@ function App() {
       localStorage.setItem("deblingo-history", JSON.stringify(next));
       return next;
     });
-  }, [activeLecture, board, marked, user]);
+  }, [activeLecture, adminMode, board, marked, user]);
 
   const addOption = async () => {
     const label = newOption.trim();
@@ -495,7 +502,10 @@ function App() {
             {isAdmin && (
               <button
                 onClick={() => {
-                  setAdminMode((current) => !current);
+                  setAdminMode((current) => {
+                    if (current) skipHistorySave.current = true;
+                    return !current;
+                  });
                   setMarked([]);
                 }}
                 className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${adminMode ? "bg-[#32c184] text-white" : "border border-[#e3e7ed] text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"}`}
