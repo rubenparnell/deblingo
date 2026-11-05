@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -56,6 +57,14 @@ function getLectureTiming(lecture: Lecture) {
   return { start, end };
 }
 
+function getPlayableWindow(lecture: Lecture) {
+  const start = new Date(new Date(lecture.starts_at).getTime() - 5 * 60 * 1000);
+  const end = lecture.ends_at
+    ? new Date(new Date(lecture.ends_at).getTime() + 5 * 60 * 1000)
+    : null;
+  return { start, end };
+}
+
 function shuffled<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);
 }
@@ -84,6 +93,10 @@ function App() {
   const [clock, setClock] = useState(() => new Date());
   const [adminMode, setAdminMode] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [historyReadyFor, setHistoryReadyFor] = useState<string | null>(null);
+  const skipHistorySave = useRef(false);
+  const historyInteraction = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -120,6 +133,7 @@ function App() {
         .order("starts_at")
         .limit(100);
       setLectures(lectures ?? []);
+      setAuthResolved(true);
       setLoading(false);
     };
     load();
@@ -149,6 +163,10 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!authResolved) return;
+
+    const historyOwner = user?.id ?? "guest";
+    setHistoryReadyFor(null);
     const loadHistory = async () => {
       if (user) {
         const { data, error: historyError } = await supabase
@@ -162,63 +180,45 @@ function App() {
           return;
         }
         setHistory((data ?? []) as HistoryEntry[]);
+        setHistoryReadyFor(historyOwner);
         return;
       }
 
       const savedHistory = localStorage.getItem("deblingo-history");
       if (!savedHistory) {
         setHistory([]);
+        setHistoryReadyFor(historyOwner);
         return;
       }
       try {
         setHistory(JSON.parse(savedHistory) as HistoryEntry[]);
+        setHistoryReadyFor(historyOwner);
       } catch {
         setError("Saved local history could not be read.");
       }
     };
 
     void loadHistory();
-  }, [user]);
+  }, [authResolved, user]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setClock(new Date()), 60 * 1000);
+    const interval = window.setInterval(() => setClock(new Date()), 1000);
     return () => window.clearInterval(interval);
   }, []);
 
-  const sortedLectures = [...lectures].sort((a, b) =>
-    a.starts_at.localeCompare(b.starts_at),
+  const sortedLectures = [...lectures].sort(
+    (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
   );
   const activeLecture =
     sortedLectures.find((lecture) => {
-      const start = new Date(
-        new Date(lecture.starts_at).getTime() - 5 * 60 * 1000,
-      );
-      const end = lecture.ends_at
-        ? new Date(new Date(lecture.ends_at).getTime() + 5 * 60 * 1000)
-        : null;
+      const { start, end } = getPlayableWindow(lecture);
       return end && start <= clock && end > clock;
     }) ?? null;
   const upcomingLecture =
     sortedLectures.find(
-      (lecture) =>
-        new Date(lecture.starts_at).getTime() - 5 * 60 * 1000 > clock.getTime(),
+      (lecture) => getPlayableWindow(lecture).start > clock,
     ) ?? null;
-  const activeIndex = activeLecture
-    ? sortedLectures.findIndex((lecture) => lecture.id === activeLecture.id)
-    : -1;
-  const previousLecture =
-    activeIndex > 0 ? sortedLectures[activeIndex - 1] : null;
-  const generationTime = previousLecture?.ends_at
-    ? new Date(
-        new Date(previousLecture.ends_at).getTime() -
-          5 * 60 * 1000 +
-          60 * 60 * 1000,
-      )
-    : null;
-  const boardReady = Boolean(
-    activeLecture && (!generationTime || clock >= generationTime),
-  );
-  const boardAvailable = boardReady || (isAdmin && adminMode);
+  const boardAvailable = Boolean(activeLecture) || (isAdmin && adminMode);
 
   useEffect(() => {
     setNextLecture(activeLecture ?? upcomingLecture);
@@ -245,6 +245,31 @@ function App() {
 
   useEffect(() => {
     if (!activeLecture || !board.length) return;
+    const historyOwner = user?.id ?? "guest";
+    if (historyReadyFor !== historyOwner) return;
+    const savedEntry = history.find(
+      (entry) => entry.source_uid === activeLecture.source_uid,
+    );
+    setMarked(
+      savedEntry
+        ? savedEntry.marked_ids.filter((id) =>
+            board.some((option) => option.id === id),
+          )
+        : [],
+    );
+  }, [activeLecture, board, history, historyReadyFor, user]);
+
+  useEffect(() => {
+    if (skipHistorySave.current) {
+      skipHistorySave.current = false;
+      return;
+    }
+    if (adminMode) return;
+    if (!activeLecture || !board.length) return;
+    const historyOwner = user?.id ?? "guest";
+    if (historyReadyFor !== historyOwner) return;
+    if (!historyInteraction.current) return;
+    historyInteraction.current = false;
 
     const entry: HistoryEntry = {
       source_uid: activeLecture.source_uid,
@@ -296,7 +321,7 @@ function App() {
       localStorage.setItem("deblingo-history", JSON.stringify(next));
       return next;
     });
-  }, [activeLecture, board, marked, user]);
+  }, [activeLecture, adminMode, board, historyReadyFor, marked, user]);
 
   const addOption = async () => {
     const label = newOption.trim();
@@ -376,6 +401,7 @@ function App() {
 
   const toggleMark = (id: number) => {
     if (!boardAvailable) return;
+    if (!adminMode) historyInteraction.current = true;
     setMarked((current) =>
       current.includes(id)
         ? current.filter((markedId) => markedId !== id)
@@ -488,12 +514,16 @@ function App() {
           </div>
           <div className="flex items-center gap-3">
             {nextLecture && !adminMode && (
-              <CountdownCard event={nextLecture} compact />
+              <CountdownCard event={nextLecture} now={clock} compact />
             )}
             {isAdmin && (
               <button
                 onClick={() => {
-                  setAdminMode((current) => !current);
+                  setAdminMode((current) => {
+                    if (current) skipHistorySave.current = true;
+                    return !current;
+                  });
+                  historyInteraction.current = false;
                   setMarked([]);
                 }}
                 className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${adminMode ? "bg-[#32c184] text-white" : "border border-[#e3e7ed] text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"}`}
@@ -554,7 +584,7 @@ function App() {
         {view === "board" ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             {!boardAvailable && nextLecture && (
-              <CountdownCard event={nextLecture} emptyState />
+              <CountdownCard event={nextLecture} now={clock} emptyState />
             )}
             {boardAvailable && (
               <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
@@ -589,7 +619,10 @@ function App() {
               <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
                 <div className="mb-4 flex items-center justify-between px-1 sm:px-2">
                   <button
-                    onClick={() => setMarked([])}
+                    onClick={() => {
+                      historyInteraction.current = true;
+                      setMarked([]);
+                    }}
                     className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"
                   >
                     <RotateCcw size={13} /> Clear marks
@@ -952,24 +985,36 @@ function AdminDenied({ onBack }: { onBack: () => void }) {
 
 function CountdownCard({
   event,
+  now,
   compact = false,
   emptyState = false,
 }: {
   event: Lecture;
+  now: Date;
   compact?: boolean;
   emptyState?: boolean;
 }) {
   const timing = getLectureTiming(event);
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const update = () => setNow(new Date());
-    const interval = window.setInterval(update, 1000);
-    return () => window.clearInterval(interval);
-  }, []);
+  const playableWindow = getPlayableWindow(event);
 
   const isLive = timing.end ? timing.start <= now && timing.end > now : false;
-  const target = isLive && timing.end ? timing.end : timing.start;
+  const isClosing =
+    !isLive &&
+    playableWindow.end !== null &&
+    timing.end !== null &&
+    timing.end <= now &&
+    playableWindow.end > now;
+  const target =
+    isLive && timing.end
+      ? timing.end
+      : isClosing && playableWindow.end
+        ? playableWindow.end
+        : timing.start;
+  const countdownLabel = isClosing
+    ? "Board closes in"
+    : isLive
+      ? "Lecture ends in"
+      : "Next lecture";
   const remaining = Math.max(0, target.getTime() - now.getTime());
   const totalSeconds = Math.floor(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -981,7 +1026,7 @@ function CountdownCard({
     return (
       <div className="hidden items-center gap-2 rounded-xl bg-[#2144d3] px-3 py-2 text-white sm:flex">
         <span className="text-[10px] font-bold uppercase tracking-wider text-white/75">
-          {isLive ? "Lecture ends in" : "Next lecture"}
+          {countdownLabel}
         </span>
         <span className="text-xs font-extrabold text-white">
           {days}d {String(hours).padStart(2, "0")}h{" "}
@@ -995,7 +1040,11 @@ function CountdownCard({
       <div className="flex min-h-[calc(100vh-88px)] items-center justify-center py-10">
         <div className="w-full max-w-[760px] rounded-[30px] bg-[#2144d3] px-6 py-14 text-center shadow-[0_20px_60px_rgba(33,68,211,0.24)] sm:px-10 sm:py-20">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">
-            {isLive ? "Lecture in progress" : "Next discrete lecture"}
+            {isClosing
+              ? "Board closing soon"
+              : isLive
+                ? "Lecture in progress"
+                : "Next discrete lecture"}
           </p>
           <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.04em] text-white sm:text-3xl">
             {event.title}
@@ -1010,7 +1059,9 @@ function CountdownCard({
             <CountdownUnit value={seconds} label="Seconds" />
           </div>
           <p className="mt-8 text-xs font-medium text-white/70">
-            The board will be available during the lecture window.
+            {isClosing
+              ? "The board will close when this countdown reaches zero."
+              : "The board will be available during the lecture window."}
           </p>
         </div>
       </div>
@@ -1019,7 +1070,11 @@ function CountdownCard({
     <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#dce4ff] bg-[#eef2ff] px-5 py-4 sm:flex-row sm:items-center">
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
-          {isLive ? "Lecture in progress" : "Next discrete lecture"}
+          {isClosing
+            ? "Board closing soon"
+            : isLive
+              ? "Lecture in progress"
+              : "Next discrete lecture"}
         </p>
         <p className="mt-1 text-sm font-bold text-[#253354]">{event.title}</p>
         <p className="mt-1 text-[11px] text-[#7180a2]">
