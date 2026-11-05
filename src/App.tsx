@@ -163,7 +163,6 @@ function App() {
             <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button className="hidden items-center gap-2 rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#647086] sm:flex"><CircleHelp size={15} /> Help center</button>
             {user ? (
               <div className="relative">
                 <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5">
@@ -181,7 +180,7 @@ function App() {
         {view === 'board' ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-              <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">the everyday.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
+              <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
               <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 24</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
             </div>
             <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
@@ -193,7 +192,6 @@ function App() {
                 })}
               </div>
             </div>
-            <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-[#8d98aa]"><Sparkles size={14} className="text-[#f5ad3c]" /> Built for better breaks, one square at a time.</div>
           </section>
         ) : isAdmin ? (
           <AdminView options={options} categories={categories} newOption={newOption} newCategory={newCategory} setNewOption={setNewOption} setNewCategory={setNewCategory} addOption={addOption} deleteOption={deleteOption} />
