@@ -10,6 +10,8 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
@@ -44,6 +46,7 @@ function App() {
   const [marked, setMarked] = useState<number[]>([])
   const [newOption, setNewOption] = useState('')
   const [showProfile, setShowProfile] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('deblingo-theme') === 'dark')
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [username, setUsername] = useState('')
@@ -126,9 +129,13 @@ function App() {
     )
   }
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] text-sm font-semibold text-[#748096]">Loading your board…</div>
+  useEffect(() => {
+    localStorage.setItem('deblingo-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  if (loading) return <div className={`flex min-h-screen items-center justify-center bg-[#f7f8fb] text-sm font-semibold text-[#748096] ${darkMode ? 'dark-theme' : ''}`}>Loading your board…</div>
   return (
-    <div className="min-h-screen bg-[#f7f8fb] text-[#182230]">
+    <div className={`min-h-screen bg-[#f7f8fb] text-[#182230] ${darkMode ? 'dark-theme' : ''}`}>
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[252px] flex-col border-r border-[#e7eaf0] bg-white lg:flex">
         <div className="flex h-[88px] items-center gap-3 border-b border-[#e7eaf0] px-7">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white shadow-[0_6px_16px_rgba(33,68,211,0.22)]">D</div>
@@ -154,6 +161,7 @@ function App() {
             <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
+            <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode((current) => !current)} className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
             {user ? (
               <div className="relative">
                 <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5">

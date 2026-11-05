@@ -29,3 +29,72 @@ select {
 button {
   cursor: pointer;
 }
+
+.dark-theme {
+  color-scheme: dark;
+}
+
+.dark-theme.bg-\[\#f7f8fb\],
+.dark-theme .bg-\[\#f7f8fb\] {
+  background-color: #111827;
+}
+
+.dark-theme .bg-white {
+  background-color: #1b2433;
+}
+
+.dark-theme .bg-\[\#fbfcfd\] {
+  background-color: #202b3d;
+}
+
+.dark-theme .border-\[\#e7eaf0\],
+.dark-theme .border-\[\#e6e9ef\],
+.dark-theme .border-\[\#e5e9ef\],
+.dark-theme .border-\[\#e4e8ef\],
+.dark-theme .border-\[\#e3e7ed\],
+.dark-theme .border-\[\#e1e6ee\],
+.dark-theme .border-\[\#edf0f4\],
+.dark-theme .border-\[\#eef0f4\] {
+  border-color: #334155;
+}
+
+.dark-theme .text-\[\#182230\],
+.dark-theme .text-\[\#15202e\],
+.dark-theme .text-\[\#354154\],
+.dark-theme .text-\[\#26344b\] {
+  color: #e5e7eb;
+}
+
+.dark-theme .text-\[\#748096\],
+.dark-theme .text-\[\#7b879a\],
+.dark-theme .text-\[\#8994a6\],
+.dark-theme .text-\[\#8d98a9\],
+.dark-theme .text-\[\#98a2b3\],
+.dark-theme .text-\[\#9aa4b4\],
+.dark-theme .text-\[\#9ba4b5\],
+.dark-theme .text-\[\#a0a9b8\],
+.dark-theme .text-\[\#a3acbb\],
+.dark-theme .text-\[\#a8b0bf\],
+.dark-theme .text-\[\#a8b1c0\],
+.dark-theme .text-\[\#b0b8c5\] {
+  color: #94a3b8;
+}
+
+.dark-theme .hover\:bg-\[\#f7f8fb\]:hover,
+.dark-theme .hover\:bg-\[\#f5f7fb\]:hover,
+.dark-theme .hover\:bg-\[\#f5f7ff\]:hover {
+  background-color: #273449;
+}
+
+.dark-theme .bg-\[\#eef2ff\],
+.dark-theme .bg-\[\#f1f5ff\],
+.dark-theme .bg-\[\#f3f5ff\],
+.dark-theme .bg-\[\#f3f5fa\],
+.dark-theme .bg-\[\#f6f7fa\] {
+  background-color: #253252;
+}
+
+.dark-theme .shadow-\[0_15px_40px_rgba\(38\,51\,77\,0\.06\)\],
+.dark-theme .shadow-\[0_10px_30px_rgba\(38\,51\,77\,0\.04\)\] {
+  box-shadow: 0 15px 40px rgb(0 0 0 / 25%);
+}
