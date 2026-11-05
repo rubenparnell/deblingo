@@ -167,8 +167,7 @@ function App() {
       <main className="min-h-screen lg:ml-[252px]">
         <header className="flex h-[88px] items-center justify-between border-b border-[#e7eaf0] bg-white px-6 sm:px-10">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9aa4b6]">Wednesday, May 14, 2025</p>
-            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? 'Team bingo' : 'Manage board options'}</h1>
+            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
             <button className="hidden items-center gap-2 rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#647086] sm:flex"><CircleHelp size={15} /> Help center</button>
