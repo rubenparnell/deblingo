@@ -11,6 +11,7 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
+  History as HistoryIcon,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-type View = "board" | "admin";
+type View = "board" | "history" | "admin";
 
 type BoardOption = {
   id: number;
@@ -34,6 +35,17 @@ type Lecture = {
   title: string;
   starts_at: string;
   ends_at: string | null;
+};
+
+type HistoryEntry = {
+  id?: number;
+  source_uid: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  board: BoardOption[];
+  marked_ids: number[];
+  score: number;
 };
 
 function getLectureTiming(lecture: Lecture) {
@@ -71,6 +83,7 @@ function App() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [clock, setClock] = useState(() => new Date());
   const [adminMode, setAdminMode] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -136,6 +149,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const loadHistory = async () => {
+      if (user) {
+        const { data, error: historyError } = await supabase
+          .from("lecture_history")
+          .select(
+            "id, source_uid, title, starts_at, ends_at, board, marked_ids, score",
+          )
+          .order("starts_at", { ascending: false });
+        if (historyError) {
+          setError(historyError.message);
+          return;
+        }
+        setHistory((data ?? []) as HistoryEntry[]);
+        return;
+      }
+
+      const savedHistory = localStorage.getItem("deblingo-history");
+      if (!savedHistory) {
+        setHistory([]);
+        return;
+      }
+      try {
+        setHistory(JSON.parse(savedHistory) as HistoryEntry[]);
+      } catch {
+        setError("Saved local history could not be read.");
+      }
+    };
+
+    void loadHistory();
+  }, [user]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => setClock(new Date()), 60 * 1000);
     return () => window.clearInterval(interval);
   }, []);
@@ -197,6 +242,61 @@ function App() {
     }
     setMarked([]);
   }, [activeLecture, upcomingLecture, boardAvailable, options]);
+
+  useEffect(() => {
+    if (!activeLecture || !board.length) return;
+
+    const entry: HistoryEntry = {
+      source_uid: activeLecture.source_uid,
+      title: activeLecture.title,
+      starts_at: activeLecture.starts_at,
+      ends_at: activeLecture.ends_at,
+      board,
+      marked_ids: marked,
+      score: marked.length,
+    };
+
+    if (user) {
+      void supabase
+        .from("lecture_history")
+        .upsert(
+          {
+            user_id: user.id,
+            ...entry,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,source_uid" },
+        )
+        .select(
+          "id, source_uid, title, starts_at, ends_at, board, marked_ids, score",
+        )
+        .single()
+        .then(({ data, error: historyError }) => {
+          if (historyError) {
+            setError(historyError.message);
+            return;
+          }
+          if (data) {
+            setHistory((current) => [
+              ...(current.filter(
+                (item) => item.source_uid !== entry.source_uid,
+              ) as HistoryEntry[]),
+              data as HistoryEntry,
+            ]);
+          }
+        });
+      return;
+    }
+
+    setHistory((current) => {
+      const next = [
+        entry,
+        ...current.filter((item) => item.source_uid !== entry.source_uid),
+      ];
+      localStorage.setItem("deblingo-history", JSON.stringify(next));
+      return next;
+    });
+  }, [activeLecture, board, marked, user]);
 
   const addOption = async () => {
     const label = newOption.trim();
@@ -336,6 +436,12 @@ function App() {
             active={view === "board"}
             onClick={() => setView("board")}
           />
+          <SidebarItem
+            icon={<HistoryIcon size={17} />}
+            label="History"
+            active={view === "history"}
+            onClick={() => setView("history")}
+          />
           {isAdmin && (
             <SidebarItem
               icon={<ClipboardList size={17} />}
@@ -375,7 +481,11 @@ function App() {
         <header className="flex h-[88px] items-center justify-between border-b border-[#e7eaf0] bg-white px-6 sm:px-10">
           <div>
             <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">
-              {view === "board" ? "" : "Manage board options"}
+              {view === "board"
+                ? ""
+                : view === "history"
+                  ? "Lecture history"
+                  : "Manage board options"}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -516,6 +626,8 @@ function App() {
               </div>
             )}
           </section>
+        ) : view === "history" ? (
+          <HistoryView history={history} />
         ) : isAdmin ? (
           <AdminView
             options={options}
@@ -532,6 +644,86 @@ function App() {
         )}
       </main>
     </div>
+  );
+}
+
+function HistoryView({ history }: { history: HistoryEntry[] }) {
+  if (!history.length) {
+    return (
+      <section className="mx-auto max-w-[1050px] px-5 py-12 sm:px-10 lg:px-14">
+        <div className="rounded-2xl border border-[#e4e8ef] bg-white p-10 text-center">
+          <HistoryIcon className="mx-auto text-[#2144d3]" size={28} />
+          <h2 className="mt-4 text-xl font-extrabold">
+            No lecture history yet.
+          </h2>
+          <p className="mt-2 text-sm text-[#748096]">
+            Your board and score will appear here after you play a lecture.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
+      <div className="mb-8">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
+          Your games
+        </p>
+        <h2 className="text-3xl font-extrabold tracking-[-0.05em]">
+          Lecture history
+        </h2>
+        <p className="mt-2 text-sm text-[#748096]">
+          Review past boards and see how many squares you marked.
+        </p>
+      </div>
+      <div className="space-y-5">
+        {history.map((entry) => (
+          <article
+            key={entry.source_uid}
+            className="rounded-[22px] border border-[#e6e9ef] bg-white p-5 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-6"
+          >
+            <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div>
+                <h3 className="text-lg font-extrabold">{entry.title}</h3>
+                <p className="mt-1 text-xs text-[#748096]">
+                  {new Date(entry.starts_at).toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-xl bg-[#eef2ff] px-4 py-2 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7b87ac]">
+                  Score
+                </p>
+                <p className="text-xl font-extrabold text-[#2144d3]">
+                  {entry.score}
+                  <span className="text-sm font-semibold text-[#8994a6]">
+                    {" "}
+                    / {entry.board.length}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+              {entry.board.map((option, index) => {
+                const isMarked = entry.marked_ids.includes(option.id);
+                return (
+                  <div
+                    key={`${entry.source_uid}-${option.id}-${index}`}
+                    className={`flex min-h-[58px] items-center justify-center rounded-xl border p-2 text-center text-[10px] font-bold leading-[1.35] sm:min-h-[72px] sm:text-[11px] ${
+                      isMarked
+                        ? "border-[#2144d3] bg-[#2144d3] text-white"
+                        : "border-[#e5e9ef] bg-[#fbfcfd] text-[#354154]"
+                    }`}
+                  >
+                    {option.label}
+                  </div>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

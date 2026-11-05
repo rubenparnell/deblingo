@@ -14,7 +14,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
-   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), and [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql) instead.
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), and [`supabase/history-migration.sql`](./supabase/history-migration.sql) instead.
 
 4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
 
@@ -72,3 +72,5 @@ Press Enter in the admin prompt field to add an option. Use Shift+Enter when you
 Admins can upload an `.ics` calendar file in **Manage options**. The app parses events whose titles contain both `discrete` and `lecture` (case-insensitive), stores them in Supabase, and displays a live countdown to the next lecture. Calendar times are adjusted by five minutes: a lecture starts at `DTSTART + 5 minutes` and ends at `DTEND - 5 minutes`.
 
 Boards are generated automatically, one hour after the previous lecture's adjusted end time. A board can only be played from five minutes before the scheduled start until five minutes after the scheduled end. Outside that window, the board is hidden and the next lecture countdown is shown.
+
+The **History** view stores each logged-in user's lecture board, marked squares, and score in Supabase. Guests get the same history experience in their current browser using local storage.
