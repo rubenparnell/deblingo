@@ -158,7 +158,7 @@ function App() {
           </div>
         </div>
         <div className="flex items-center gap-3 border-t border-[#e7eaf0] px-6 py-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5b69d] text-[11px] font-bold text-[#7b3e31]">RP</div>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${user ? 'bg-[#f5b69d] text-[#7b3e31]' : 'bg-[#eef2ff] text-[#2144d3]'}`}>{user ? 'RP' : 'G'}</div>
           <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{user ? 'Ruben Parnell' : 'Playing as guest'}</p><p className="text-[10px] text-[#98a2b3]">{user ? 'Admin' : 'No login needed'}</p></div>
           {user && <button aria-label="Log out" onClick={() => supabase.auth.signOut()} className="text-[#a8b0bf]"><LogOut size={15} /></button>}
         </div>
@@ -172,12 +172,16 @@ function App() {
           </div>
           <div className="flex items-center gap-3">
             <button className="hidden items-center gap-2 rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#647086] sm:flex"><CircleHelp size={15} /> Help center</button>
-            <div className="relative">
-              <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">RP</span><ChevronDown size={14} className="text-[#8993a5]" />
-              </button>
-              {showProfile && <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl"><button className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Profile</button><button className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Sign out</button></div>}
-            </div>
+            {user ? (
+              <div className="relative">
+                <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">RP</span><ChevronDown size={14} className="text-[#8993a5]" />
+                </button>
+                {showProfile && <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl"><button className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Profile</button><button onClick={() => supabase.auth.signOut()} className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Sign out</button></div>}
+              </div>
+            ) : (
+              <span className="rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#7b879a]">Guest</span>
+            )}
           </div>
         </header>
 
