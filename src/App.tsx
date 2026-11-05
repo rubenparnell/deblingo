@@ -422,9 +422,7 @@ function App() {
     >
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[252px] flex-col border-r border-[#e7eaf0] bg-white lg:flex">
         <div className="flex h-[88px] items-center gap-3 border-b border-[#e7eaf0] px-7">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white shadow-[0_6px_16px_rgba(33,68,211,0.22)]">
-            D
-          </div>
+          <img id="logo" src="/src/assets/icon.png"/>
           <div>
             <p className="text-[17px] font-bold tracking-[-0.03em]">deblingo</p>
           </div>
