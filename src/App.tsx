@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   Check,
   ChevronDown,
-  CircleHelp,
   ClipboardList,
   Dice5,
   LayoutDashboard,
   LogOut,
   Plus,
   RotateCcw,
-  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
@@ -20,7 +18,6 @@ type View = 'board' | 'admin'
 type BoardOption = {
   id: number
   label: string
-  category: string
 }
 
 function shuffled<T>(items: T[]) {
@@ -31,7 +28,7 @@ function createBoard(options: BoardOption[]) {
   const fillBoard = shuffled(options).slice(0, 24)
   return [
     ...fillBoard.slice(0, 12),
-    { id: 0, label: 'FREE SPACE', category: 'Bingo' },
+    { id: 0, label: 'FREE SPACE' },
     ...fillBoard.slice(12),
   ]
 }
@@ -46,7 +43,6 @@ function App() {
   const [board, setBoard] = useState<BoardOption[]>([])
   const [marked, setMarked] = useState<number[]>([])
   const [newOption, setNewOption] = useState('')
-  const [newCategory, setNewCategory] = useState('Meetings')
   const [showProfile, setShowProfile] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -54,17 +50,12 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const categories = useMemo(
-    () => ['Meetings', 'Remote life', 'Work life'],
-    [],
-  )
-
   useEffect(() => {
     let active = true
     const load = async () => {
       const [{ data: userData }, { data, error: optionsError }] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from('board_options').select('id, label, category').order('created_at'),
+        supabase.from('board_options').select('id, label').order('created_at'),
       ])
       if (!active) return
       if (optionsError) setError(optionsError.message)
@@ -106,7 +97,7 @@ function App() {
   const addOption = async () => {
     const label = newOption.trim()
     if (!label) return
-    const { data, error: insertError } = await supabase.from('board_options').insert({ label, category: newCategory, created_by: user?.id }).select('id, label, category').single()
+    const { data, error: insertError } = await supabase.from('board_options').insert({ label, created_by: user?.id }).select('id, label').single()
     if (insertError) {
       setError(insertError.message)
       return
@@ -188,13 +179,13 @@ function App() {
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {board.map((option, index) => {
                   const isMarked = option.id === 0 || marked.includes(option.id)
-                  return <button key={`${option.id}-${index}`} onClick={() => toggleMark(option.id)} className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? 'border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]' : 'border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]'}`}><span className={`mb-2 text-[8px] font-bold uppercase tracking-[0.13em] sm:text-[9px] ${isMarked ? 'text-[#bfcaff]' : 'text-[#a6afbd]'}`}>{option.category}</span><span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">{option.label}</span>{isMarked && option.id !== 0 && <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/20"><Check size={10} /></span>}</button>
+                  return <button key={`${option.id}-${index}`} onClick={() => toggleMark(option.id)} className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? 'border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]' : 'border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]'}`}><span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">{option.label}</span>{isMarked && option.id !== 0 && <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/20"><Check size={10} /></span>}</button>
                 })}
               </div>
             </div>
           </section>
         ) : isAdmin ? (
-          <AdminView options={options} categories={categories} newOption={newOption} newCategory={newCategory} setNewOption={setNewOption} setNewCategory={setNewCategory} addOption={addOption} deleteOption={deleteOption} />
+          <AdminView options={options} newOption={newOption} setNewOption={setNewOption} addOption={addOption} deleteOption={deleteOption} />
         ) : user ? (
           <AdminDenied onBack={() => setView('board')} />
         ) : (
@@ -270,8 +261,14 @@ function AdminDenied({ onBack }: { onBack: () => void }) {
   return <section className="mx-auto max-w-[600px] px-5 py-20 text-center sm:px-10"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e7] text-2xl">🔒</div><h2 className="mt-5 text-2xl font-extrabold tracking-[-0.04em]">Admin access only.</h2><p className="mx-auto mt-2 max-w-[400px] text-sm leading-6 text-[#748096]">This account can play bingo, but it does not have permission to change the board options.</p><button onClick={onBack} className="mt-6 rounded-xl bg-[#2144d3] px-5 py-3 text-sm font-bold text-white">Back to board</button></section>
 }
 
-function AdminView({ options, categories, newOption, newCategory, setNewOption, setNewCategory, addOption, deleteOption }: { options: BoardOption[]; categories: string[]; newOption: string; newCategory: string; setNewOption: (value: string) => void; setNewCategory: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void }) {
-  return <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14"><div className="mb-8 flex items-end justify-between gap-4"><div><p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">Admin controls</p><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">Shape your board.</h2><p className="mt-2 text-[13px] text-[#748096]">Add prompts your team will instantly recognize.</p></div><div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block"><p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">Available prompts</p><p className="text-xl font-extrabold text-[#2144d3]">{options.length}</p></div></div><div className="grid gap-6 lg:grid-cols-[350px_1fr]"><div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="mb-5 flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]"><Plus size={16} /></div><div><h3 className="text-[13px] font-bold">Add an option</h3><p className="text-[11px] text-[#9aa4b4]">It will appear on future boards.</p></div></div><label className="mb-2 block text-[11px] font-bold text-[#59667c]">Prompt</label><textarea value={newOption} onChange={(event) => setNewOption(event.target.value)} placeholder="e.g. Someone mentions the weather" rows={4} className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" /><label className="mb-2 mt-4 block text-[11px] font-bold text-[#59667c]">Category</label><select value={newCategory} onChange={(event) => setNewCategory(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] text-[#354154] outline-none">{categories.map((category) => <option key={category}>{category}</option>)}</select><button onClick={addOption} disabled={!newOption.trim()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /> Add to board</button></div><div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4"><div><h3 className="text-[13px] font-bold">Board options</h3><p className="mt-0.5 text-[11px] text-[#9aa4b4]">The board randomly selects 24 each round.</p></div><span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">{options.length} total</span></div><div className="divide-y divide-[#f0f2f5]">{options.map((option) => <div key={option.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]"><ClipboardList size={14} /></div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-semibold text-[#354154]">{option.label}</p><p className="mt-0.5 text-[10px] font-medium text-[#a0a9b8]">{option.category}</p></div><button aria-label={`Delete ${option.label}`} onClick={() => deleteOption(option.id)} className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"><Trash2 size={15} /></button></div>)}</div></div></div></section>
+function AdminView({ options, newOption, setNewOption, addOption, deleteOption }: { options: BoardOption[]; newOption: string; setNewOption: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void }) {
+  const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      addOption()
+    }
+  }
+  return <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14"><div className="mb-8 flex items-end justify-between gap-4"><div><p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">Admin controls</p><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">Shape your board.</h2><p className="mt-2 text-[13px] text-[#748096]">Add prompts your team will instantly recognize.</p></div><div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block"><p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">Available prompts</p><p className="text-xl font-extrabold text-[#2144d3]">{options.length}</p></div></div><div className="grid gap-6 lg:grid-cols-[350px_1fr]"><div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="mb-5 flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]"><Plus size={16} /></div><div><h3 className="text-[13px] font-bold">Add an option</h3><p className="text-[11px] text-[#9aa4b4]">It will appear on future boards.</p></div></div><label className="mb-2 block text-[11px] font-bold text-[#59667c]">Prompt</label><textarea value={newOption} onChange={(event) => setNewOption(event.target.value)} onKeyDown={submitOnEnter} placeholder="e.g. Someone mentions the weather" rows={4} className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" /><button onClick={addOption} disabled={!newOption.trim()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /> Add to board</button></div><div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4"><div><h3 className="text-[13px] font-bold">Board options</h3><p className="mt-0.5 text-[11px] text-[#9aa4b4]">The board randomly selects 24 each round.</p></div><span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">{options.length} total</span></div><div className="divide-y divide-[#f0f2f5]">{options.map((option) => <div key={option.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]"><ClipboardList size={14} /></div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-semibold text-[#354154]">{option.label}</p></div><button aria-label={`Delete ${option.label}`} onClick={() => deleteOption(option.id)} className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"><Trash2 size={15} /></button></div>)}</div></div></div></section>
 }
 
 export default App
