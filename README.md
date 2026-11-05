@@ -69,8 +69,8 @@ The board is available to everyone without signing in. Visitors can randomize an
 
 Press Enter in the admin prompt field to add an option. Use Shift+Enter when you need a line break.
 
-Admins can upload an `.ics` calendar file in **Manage options**. The app parses events whose titles contain both `discrete` and `lecture` (case-insensitive), stores them in Supabase, and displays a live countdown to the next lecture. Calendar times are adjusted by five minutes: a lecture starts at `DTSTART + 5 minutes` and ends at `DTEND - 5 minutes`.
+Admins can upload an `.ics` calendar file in **Manage options**. The app parses events whose titles contain both `discrete` and `lecture` (case-insensitive), stores them in Supabase, and displays a live countdown to the next lecture. Calendar times are used in two ways. The countdown considers the lecture to start at `DTSTART + 5 minutes` and end at `DTEND - 5 minutes`. The board is playable from `DTSTART - 5 minutes` through `DTEND + 5 minutes`, so the schedule does not need to be aligned to the hour.
 
-Boards are generated automatically, one hour after the previous lecture's adjusted end time. A board can only be played from five minutes before the scheduled start until five minutes after the scheduled end. Outside that window, the board is hidden and the next lecture countdown is shown.
+Each lecture gets one stable randomized board, generated and saved when its playable window opens. The board and marks reset when the active lecture changes. Outside a lecture's playable window, the board is hidden and the next lecture countdown is shown. Admin mode bypasses the lecture window; outside a lecture it uses a separate admin board, while during a lecture it displays that lecture's board. Admin-mode marks are never saved to history.
 
-The **History** view stores each logged-in user's lecture board, marked squares, and score in Supabase. Guests get the same history experience in their current browser using local storage.
+The **History** view stores each logged-in user's lecture board, marked squares, and score in Supabase while the lecture is playable. The score is updated after each mark or unmark and is final once the playable window closes. Guests get the same history experience in their current browser using local storage.
