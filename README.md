@@ -14,7 +14,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
-   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql) and [`supabase/remove-categories.sql`](./supabase/remove-categories.sql) instead.
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), and [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql) instead.
 
 4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
 
@@ -68,3 +68,5 @@ npm run preview
 The board is available to everyone without signing in. Visitors can randomize and mark their own board locally. Supabase login is only requested when someone opens **Manage options**. Board options are shared through Supabase, while adding and deleting options is restricted by database row-level security to users whose `profiles.is_admin` value is `true`.
 
 Press Enter in the admin prompt field to add an option. Use Shift+Enter when you need a line break.
+
+Admins can upload an `.ics` calendar file in **Manage options**. The app parses events whose titles contain both `discrete` and `lecture` (case-insensitive), stores them in Supabase, and displays a live countdown to the next lecture. Calendar times are adjusted by five minutes: a lecture starts at `DTSTART + 5 minutes` and ends at `DTEND - 5 minutes`.

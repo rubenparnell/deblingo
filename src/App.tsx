@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
+import ICAL from 'ical.js'
 import {
   Check,
   ChevronDown,
@@ -20,6 +21,22 @@ type View = 'board' | 'admin'
 type BoardOption = {
   id: number
   label: string
+}
+
+type Lecture = {
+  id: number
+  source_uid: string
+  title: string
+  starts_at: string
+  ends_at: string | null
+}
+
+function getLectureTiming(lecture: Lecture) {
+  const start = new Date(new Date(lecture.starts_at).getTime() + 5 * 60 * 1000)
+  const end = lecture.ends_at
+    ? new Date(new Date(lecture.ends_at).getTime() - 5 * 60 * 1000)
+    : null
+  return { start, end }
 }
 
 function shuffled<T>(items: T[]) {
@@ -43,6 +60,7 @@ function App() {
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [nextLecture, setNextLecture] = useState<Lecture | null>(null)
 
   useEffect(() => {
     let active = true
@@ -63,6 +81,14 @@ function App() {
         setOptions(data)
         setBoard(createBoard(data))
       }
+      const { data: lectures } = await supabase.from('lectures').select('id, source_uid, title, starts_at, ends_at').order('starts_at').limit(100)
+      const now = new Date()
+      const current = lectures?.find((lecture) => {
+        const timing = getLectureTiming(lecture)
+        return timing.end && timing.start <= now && timing.end > now
+      })
+      const next = lectures?.find((lecture) => getLectureTiming(lecture).start > now)
+      setNextLecture(current ?? next ?? null)
       setLoading(false)
     }
     load()
@@ -100,6 +126,38 @@ function App() {
     setNewOption('')
   }
 
+  const uploadLectures = async (file: File) => {
+    try {
+      const calendar = new ICAL.Component(ICAL.parse(await file.text()))
+      const lectures = calendar.getAllSubcomponents('vevent')
+        .map((component) => {
+          const event = new ICAL.Event(component)
+          return {
+            source_uid: event.uid,
+            title: event.summary,
+            starts_at: event.startDate.toJSDate().toISOString(),
+            ends_at: event.endDate?.toJSDate().toISOString() ?? null,
+            uploaded_by: user?.id,
+          }
+        })
+        .filter((lecture) => {
+          const title = lecture.title.toLowerCase()
+          return title.includes('discrete') && title.includes('lecture')
+        })
+      if (!lectures.length) {
+        setError('No future events containing both “discrete” and “lecture” were found.')
+        return
+      }
+      const { error: clearError } = await supabase.from('lectures').delete().neq('id', 0)
+      if (clearError) throw clearError
+      const { data, error: insertError } = await supabase.from('lectures').insert(lectures).select('id, source_uid, title, starts_at, ends_at').order('starts_at')
+      if (insertError) throw insertError
+      setNextLecture(data?.[0] ?? null)
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Unable to parse the ICS file.')
+    }
+  }
+
   const deleteOption = async (id: number) => {
     const { error: deleteError } = await supabase.from('board_options').delete().eq('id', id)
     if (deleteError) {
@@ -122,6 +180,21 @@ function App() {
   useEffect(() => {
     localStorage.setItem('deblingo-theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
+
+  useEffect(() => {
+    const refreshLecture = async () => {
+      const { data: lectures } = await supabase.from('lectures').select('id, source_uid, title, starts_at, ends_at').order('starts_at').limit(100)
+      const now = new Date()
+      const current = lectures?.find((lecture) => {
+        const timing = getLectureTiming(lecture)
+        return timing.end && timing.start <= now && timing.end > now
+      })
+      const next = lectures?.find((lecture) => getLectureTiming(lecture).start > now)
+      setNextLecture(current ?? next ?? null)
+    }
+    const interval = window.setInterval(refreshLecture, 60 * 1000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   if (loading) return <div className={`flex min-h-screen items-center justify-center bg-[#f7f8fb] text-sm font-semibold text-[#748096] ${darkMode ? 'dark-theme' : ''}`}>Loading your board…</div>
   return (
@@ -150,6 +223,7 @@ function App() {
             <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {nextLecture && <CountdownCard event={nextLecture} compact />}
             <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode((current) => !current)} className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
             {user ? (
               <div className="relative">
@@ -182,7 +256,7 @@ function App() {
             </div>
           </section>
         ) : isAdmin ? (
-          <AdminView options={options} newOption={newOption} setNewOption={setNewOption} addOption={addOption} deleteOption={deleteOption} />
+          <AdminView options={options} newOption={newOption} setNewOption={setNewOption} addOption={addOption} deleteOption={deleteOption} uploadLectures={uploadLectures} />
         ) : user ? (
           <AdminDenied onBack={() => setView('board')} />
         ) : (
@@ -258,14 +332,36 @@ function AdminDenied({ onBack }: { onBack: () => void }) {
   return <section className="mx-auto max-w-[600px] px-5 py-20 text-center sm:px-10"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e7] text-2xl">🔒</div><h2 className="mt-5 text-2xl font-extrabold tracking-[-0.04em]">Admin access only.</h2><p className="mx-auto mt-2 max-w-[400px] text-sm leading-6 text-[#748096]">This account can play bingo, but it does not have permission to change the board options.</p><button onClick={onBack} className="mt-6 rounded-xl bg-[#2144d3] px-5 py-3 text-sm font-bold text-white">Back to board</button></section>
 }
 
-function AdminView({ options, newOption, setNewOption, addOption, deleteOption }: { options: BoardOption[]; newOption: string; setNewOption: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void }) {
+function CountdownCard({ event, compact = false }: { event: Lecture; compact?: boolean }) {
+  const timing = getLectureTiming(event)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const update = () => setNow(new Date())
+    const interval = window.setInterval(update, 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  const isLive = timing.end ? timing.start <= now && timing.end > now : false
+  const target = isLive && timing.end ? timing.end : timing.start
+  const remaining = Math.max(0, target.getTime() - now.getTime())
+  const totalSeconds = Math.floor(remaining / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return compact ? <div className="hidden items-center gap-2 rounded-xl bg-[#2144d3] px-3 py-2 text-white sm:flex"><span className="text-[10px] font-bold uppercase tracking-wider text-white/75">{isLive ? 'Lecture ends in' : 'Next lecture'}</span><span className="text-xs font-extrabold text-white">{days}d {String(hours).padStart(2, '0')}h {String(minutes).padStart(2, '0')}m {String(seconds).padStart(2, '0')}s</span></div> : <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#dce4ff] bg-[#eef2ff] px-5 py-4 sm:flex-row sm:items-center"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">{isLive ? 'Lecture in progress' : 'Next discrete lecture'}</p><p className="mt-1 text-sm font-bold text-[#253354]">{event.title}</p><p className="mt-1 text-[11px] text-[#7180a2]">{target.toLocaleString()}</p></div><div className="flex items-baseline gap-1 text-[#2144d3]"><span className="text-2xl font-extrabold">{days}d</span><span className="text-2xl font-extrabold">{String(hours).padStart(2, '0')}h</span><span className="text-2xl font-extrabold">{String(minutes).padStart(2, '0')}m</span><span className="text-lg font-bold">{String(seconds).padStart(2, '0')}s</span></div></div>
+}
+
+function AdminView({ options, newOption, setNewOption, addOption, deleteOption, uploadLectures }: { options: BoardOption[]; newOption: string; setNewOption: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void; uploadLectures: (file: File) => void }) {
   const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       addOption()
     }
   }
-  return <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14"><div className="mb-8 flex items-end justify-between gap-4"><div><p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">Admin controls</p><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">Shape your board.</h2><p className="mt-2 text-[13px] text-[#748096]">Add prompts your team will instantly recognize.</p></div><div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block"><p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">Available prompts</p><p className="text-xl font-extrabold text-[#2144d3]">{options.length}</p></div></div><div className="grid gap-6 lg:grid-cols-[350px_1fr]"><div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="mb-5 flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]"><Plus size={16} /></div><div><h3 className="text-[13px] font-bold">Add an option</h3><p className="text-[11px] text-[#9aa4b4]">It will appear on future boards.</p></div></div><label className="mb-2 block text-[11px] font-bold text-[#59667c]">Prompt</label><textarea value={newOption} onChange={(event) => setNewOption(event.target.value)} onKeyDown={submitOnEnter} placeholder="e.g. 'Alphabets'" rows={4} className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" /><button onClick={addOption} disabled={!newOption.trim()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /> Add to board</button></div><div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4"><div><h3 className="text-[13px] font-bold">Board options</h3><p className="mt-0.5 text-[11px] text-[#9aa4b4]">The board randomly selects 24 each round.</p></div><span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">{options.length} total</span></div><div className="divide-y divide-[#f0f2f5]">{options.map((option) => <div key={option.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]"><ClipboardList size={14} /></div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-semibold text-[#354154]">{option.label}</p></div><button aria-label={`Delete ${option.label}`} onClick={() => deleteOption(option.id)} className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"><Trash2 size={15} /></button></div>)}</div></div></div></section>
+  return <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14"><div className="mb-8 flex items-end justify-between gap-4"><div><p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">Admin controls</p><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">Shape your board.</h2><p className="mt-2 text-[13px] text-[#748096]">Add prompts your team will instantly recognize.</p></div><div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block"><p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">Available prompts</p><p className="text-xl font-extrabold text-[#2144d3]">{options.length}</p></div></div><div className="mb-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><h3 className="text-[13px] font-bold">Lecture calendar</h3><p className="mt-1 text-[11px] text-[#9aa4b4]">Upload an ICS file. Events containing both “discrete” and “lecture” in the title will be saved.</p><input type="file" accept=".ics,text/calendar" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadLectures(file); event.currentTarget.value = '' }} className="mt-4 block w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px]" /></div><div className="grid gap-6 lg:grid-cols-[350px_1fr]"><div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="mb-5 flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]"><Plus size={16} /></div><div><h3 className="text-[13px] font-bold">Add an option</h3><p className="text-[11px] text-[#9aa4b4]">It will appear on future boards.</p></div></div><label className="mb-2 block text-[11px] font-bold text-[#59667c]">Prompt</label><textarea value={newOption} onChange={(event) => setNewOption(event.target.value)} onKeyDown={submitOnEnter} placeholder="e.g. 'Alphabets'" rows={4} className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" /><button onClick={addOption} disabled={!newOption.trim()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /> Add to board</button></div><div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]"><div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4"><div><h3 className="text-[13px] font-bold">Board options</h3><p className="mt-0.5 text-[11px] text-[#9aa4b4]">The board randomly selects 24 each round.</p></div><span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">{options.length} total</span></div><div className="divide-y divide-[#f0f2f5]">{options.map((option) => <div key={option.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]"><ClipboardList size={14} /></div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-semibold text-[#354154]">{option.label}</p></div><button aria-label={`Delete ${option.label}`} onClick={() => deleteOption(option.id)} className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"><Trash2 size={15} /></button></div>)}</div></div></div></section>
 }
 
 export default App
