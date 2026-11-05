@@ -27,12 +27,7 @@ function shuffled<T>(items: T[]) {
 }
 
 function createBoard(options: BoardOption[]) {
-  const fillBoard = shuffled(options).slice(0, 24)
-  return [
-    ...fillBoard.slice(0, 12),
-    { id: 0, label: 'FREE SPACE' },
-    ...fillBoard.slice(12),
-  ]
+  return shuffled(options).slice(0, 25)
 }
 
 function App() {
@@ -121,7 +116,6 @@ function App() {
   }
 
   const toggleMark = (id: number) => {
-    if (id === 0) return
     setMarked((current) =>
       current.includes(id)
         ? current.filter((markedId) => markedId !== id)
@@ -180,14 +174,14 @@ function App() {
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
-              <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 24</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
+              <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 25</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
             </div>
             <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
               <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a0a9b8]">{boardDate} · live board</p><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {board.map((option, index) => {
-                  const isMarked = option.id === 0 || marked.includes(option.id)
-                  return <button key={`${option.id}-${index}`} onClick={() => toggleMark(option.id)} className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? 'border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]' : 'border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]'}`}><span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">{option.label}</span>{isMarked && option.id !== 0 && <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/20"><Check size={10} /></span>}</button>
+                  const isMarked = marked.includes(option.id)
+                  return <button key={`${option.id}-${index}`} onClick={() => toggleMark(option.id)} className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? 'border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]' : 'border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]'}`}><span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">{option.label}</span>{isMarked && <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/20"><Check size={10} /></span>}</button>
                 })}
               </div>
             </div>
