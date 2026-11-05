@@ -242,7 +242,7 @@ function App() {
         {view === 'board' ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-              <div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call deblingo!</p></div>
+              <div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call deblingo!</p></div>
               <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 25</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
             </div>
             <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
