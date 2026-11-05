@@ -138,24 +138,12 @@ function App() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white shadow-[0_6px_16px_rgba(33,68,211,0.22)]">D</div>
           <div>
             <p className="text-[17px] font-bold tracking-[-0.03em]">deblingo</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.17em] text-[#9ba4b5]">team games</p>
           </div>
         </div>
         <div className="flex flex-1 flex-col px-4 py-7">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Workspace</p>
           <SidebarItem icon={<LayoutDashboard size={17} />} label="Board" active={view === 'board'} onClick={() => setView('board')} />
           <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />
-          <div className="mt-8 border-t border-[#eef0f4] pt-6">
-            <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Account</p>
-            <SidebarItem icon={<Users size={17} />} label="Team members" />
-            <SidebarItem icon={<Settings size={17} />} label="Settings" />
-          </div>
-          <div className="mt-auto rounded-2xl bg-[#f1f5ff] p-4">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#2144d3]"><Sparkles size={16} /></div>
-            <p className="text-[12px] font-bold">Make it yours</p>
-            <p className="mt-1 text-[11px] leading-5 text-[#6e7c9a]">Add your own moments to create a board your team will love.</p>
-            <button onClick={() => setView('admin')} className="mt-3 text-[11px] font-bold text-[#2144d3]">Customize board <ArrowUpRight className="ml-1 inline" size={13} /></button>
-          </div>
         </div>
         <div className="flex items-center gap-3 border-t border-[#e7eaf0] px-6 py-5">
           <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${user ? 'bg-[#f5b69d] text-[#7b3e31]' : 'bg-[#eef2ff] text-[#2144d3]'}`}>{user ? 'RP' : 'G'}</div>
@@ -167,8 +155,7 @@ function App() {
       <main className="min-h-screen lg:ml-[252px]">
         <header className="flex h-[88px] items-center justify-between border-b border-[#e7eaf0] bg-white px-6 sm:px-10">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9aa4b6]">Wednesday, May 14, 2025</p>
-            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? 'Team bingo' : 'Manage board options'}</h1>
+            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
             <button className="hidden items-center gap-2 rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#647086] sm:flex"><CircleHelp size={15} /> Help center</button>
