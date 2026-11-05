@@ -5,7 +5,6 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
-  Dice5,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -65,6 +64,9 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [nextLecture, setNextLecture] = useState<Lecture | null>(null)
+  const [lectures, setLectures] = useState<Lecture[]>([])
+  const [clock, setClock] = useState(() => new Date())
+  const [adminMode, setAdminMode] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -86,13 +88,7 @@ function App() {
         setBoard(createBoard(data))
       }
       const { data: lectures } = await supabase.from('lectures').select('id, source_uid, title, starts_at, ends_at').order('starts_at').limit(100)
-      const now = new Date()
-      const current = lectures?.find((lecture) => {
-        const timing = getLectureTiming(lecture)
-        return timing.end && timing.start <= now && timing.end > now
-      })
-      const next = lectures?.find((lecture) => getLectureTiming(lecture).start > now)
-      setNextLecture(current ?? next ?? null)
+      setLectures(lectures ?? [])
       setLoading(false)
     }
     load()
@@ -113,10 +109,48 @@ function App() {
     }
   }, [])
 
-  const randomizeBoard = () => {
-    setBoard(createBoard(options))
+  useEffect(() => {
+    const interval = window.setInterval(() => setClock(new Date()), 60 * 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  const sortedLectures = [...lectures].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+  const activeLecture = sortedLectures.find((lecture) => {
+    const start = new Date(lecture.starts_at)
+    const end = lecture.ends_at ? new Date(lecture.ends_at) : null
+    return end && start <= clock && end > clock
+  }) ?? null
+  const upcomingLecture = sortedLectures.find((lecture) => new Date(lecture.starts_at) > clock) ?? null
+  const activeIndex = activeLecture ? sortedLectures.findIndex((lecture) => lecture.id === activeLecture.id) : -1
+  const previousLecture = activeIndex > 0 ? sortedLectures[activeIndex - 1] : null
+  const generationTime = previousLecture?.ends_at
+    ? new Date(new Date(previousLecture.ends_at).getTime() - 5 * 60 * 1000 + 60 * 60 * 1000)
+    : null
+  const boardReady = Boolean(activeLecture && (!generationTime || clock >= generationTime))
+  const boardAvailable = boardReady || (isAdmin && adminMode)
+
+  useEffect(() => {
+    setNextLecture(activeLecture ?? upcomingLecture)
+    if (!boardAvailable || !options.length) {
+      if (!boardAvailable) {
+        setBoard([])
+        setMarked([])
+      }
+      return
+    }
+    const storageKey = activeLecture
+      ? `deblingo-board-${activeLecture.source_uid}`
+      : 'deblingo-board-admin'
+    const savedBoard = localStorage.getItem(storageKey)
+    if (savedBoard) {
+      setBoard(JSON.parse(savedBoard))
+    } else {
+      const generatedBoard = createBoard(options)
+      localStorage.setItem(storageKey, JSON.stringify(generatedBoard))
+      setBoard(generatedBoard)
+    }
     setMarked([])
-  }
+  }, [activeLecture, upcomingLecture, boardAvailable, options])
 
   const addOption = async () => {
     const label = newOption.trim()
@@ -156,7 +190,7 @@ function App() {
       if (clearError) throw clearError
       const { data, error: insertError } = await supabase.from('lectures').insert(lectures).select('id, source_uid, title, starts_at, ends_at').order('starts_at')
       if (insertError) throw insertError
-      setNextLecture(data?.[0] ?? null)
+      setLectures(data ?? [])
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Unable to parse the ICS file.')
     }
@@ -174,6 +208,7 @@ function App() {
   }
 
   const toggleMark = (id: number) => {
+    if (!boardAvailable) return
     setMarked((current) =>
       current.includes(id)
         ? current.filter((markedId) => markedId !== id)
@@ -228,7 +263,8 @@ function App() {
             <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">{view === 'board' ? '' : 'Manage board options'}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {nextLecture && <CountdownCard event={nextLecture} compact />}
+            {nextLecture && !adminMode && <CountdownCard event={nextLecture} compact />}
+            {isAdmin && <button onClick={() => { setAdminMode((current) => !current); setMarked([]) }} className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${adminMode ? 'bg-[#32c184] text-white' : 'border border-[#e3e7ed] text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]'}`}>{adminMode ? 'Exit admin mode' : 'Admin mode'}</button>}
             <button aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setDarkMode((current) => !current)} className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
             {user ? (
               <div className="relative">
@@ -246,11 +282,12 @@ function App() {
         {error && <div className="mx-auto mt-5 max-w-[1120px] rounded-xl border border-[#f1caca] bg-[#fff5f5] px-4 py-3 text-xs text-[#b34e4e]">{error}</div>}
         {view === 'board' ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
-            <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-              <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
-              <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 25</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
-            </div>
-            <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
+            {!boardAvailable && nextLecture && <CountdownCard event={nextLecture} emptyState />}
+            {boardAvailable && <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+              <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">Deblingo.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
+              <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 25</span></p></div></div>
+            </div>}
+            {boardAvailable && <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
               <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a0a9b8]">{boardDate} · live board</p><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {board.map((option, index) => {
@@ -258,7 +295,8 @@ function App() {
                   return <button key={`${option.id}-${index}`} onClick={() => toggleMark(option.id)} className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? 'border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]' : 'border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]'}`}><span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">{option.label}</span>{isMarked && <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/20"><Check size={10} /></span>}</button>
                 })}
               </div>
-            </div>
+            </div>}
+            {!boardAvailable && !nextLecture && <div className="rounded-2xl border border-[#e4e8ef] bg-white p-10 text-center text-sm text-[#748096]">No lecture is currently available.</div>}
           </section>
         ) : isAdmin ? (
           <AdminView options={options} newOption={newOption} setNewOption={setNewOption} addOption={addOption} deleteOption={deleteOption} uploadLectures={uploadLectures} />
@@ -337,7 +375,7 @@ function AdminDenied({ onBack }: { onBack: () => void }) {
   return <section className="mx-auto max-w-[600px] px-5 py-20 text-center sm:px-10"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e7] text-2xl">🔒</div><h2 className="mt-5 text-2xl font-extrabold tracking-[-0.04em]">Admin access only.</h2><p className="mx-auto mt-2 max-w-[400px] text-sm leading-6 text-[#748096]">This account can play bingo, but it does not have permission to change the board options.</p><button onClick={onBack} className="mt-6 rounded-xl bg-[#2144d3] px-5 py-3 text-sm font-bold text-white">Back to board</button></section>
 }
 
-function CountdownCard({ event, compact = false }: { event: Lecture; compact?: boolean }) {
+function CountdownCard({ event, compact = false, emptyState = false }: { event: Lecture; compact?: boolean; emptyState?: boolean }) {
   const timing = getLectureTiming(event)
   const [now, setNow] = useState(() => new Date())
 
@@ -356,7 +394,13 @@ function CountdownCard({ event, compact = false }: { event: Lecture; compact?: b
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
 
-  return compact ? <div className="hidden items-center gap-2 rounded-xl bg-[#2144d3] px-3 py-2 text-white sm:flex"><span className="text-[10px] font-bold uppercase tracking-wider text-white/75">{isLive ? 'Lecture ends in' : 'Next lecture'}</span><span className="text-xs font-extrabold text-white">{days}d {String(hours).padStart(2, '0')}h {String(minutes).padStart(2, '0')}m {String(seconds).padStart(2, '0')}s</span></div> : <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#dce4ff] bg-[#eef2ff] px-5 py-4 sm:flex-row sm:items-center"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">{isLive ? 'Lecture in progress' : 'Next discrete lecture'}</p><p className="mt-1 text-sm font-bold text-[#253354]">{event.title}</p><p className="mt-1 text-[11px] text-[#7180a2]">{target.toLocaleString()}</p></div><div className="flex items-baseline gap-1 text-[#2144d3]"><span className="text-2xl font-extrabold">{days}d</span><span className="text-2xl font-extrabold">{String(hours).padStart(2, '0')}h</span><span className="text-2xl font-extrabold">{String(minutes).padStart(2, '0')}m</span><span className="text-lg font-bold">{String(seconds).padStart(2, '0')}s</span></div></div>
+  if (compact) return <div className="hidden items-center gap-2 rounded-xl bg-[#2144d3] px-3 py-2 text-white sm:flex"><span className="text-[10px] font-bold uppercase tracking-wider text-white/75">{isLive ? 'Lecture ends in' : 'Next lecture'}</span><span className="text-xs font-extrabold text-white">{days}d {String(hours).padStart(2, '0')}h {String(minutes).padStart(2, '0')}m {String(seconds).padStart(2, '0')}s</span></div>
+  if (emptyState) return <div className="flex min-h-[calc(100vh-88px)] items-center justify-center py-10"><div className="w-full max-w-[760px] rounded-[30px] bg-[#2144d3] px-6 py-14 text-center shadow-[0_20px_60px_rgba(33,68,211,0.24)] sm:px-10 sm:py-20"><p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">{isLive ? 'Lecture in progress' : 'Next discrete lecture'}</p><h2 className="mt-4 text-2xl font-extrabold tracking-[-0.04em] text-white sm:text-3xl">{event.title}</h2><p className="mt-3 text-sm text-white/80">{target.toLocaleString()}</p><div className="mt-10 flex justify-center gap-2 text-white sm:gap-4"><CountdownUnit value={days} label="Days" /><CountdownUnit value={hours} label="Hours" /><CountdownUnit value={minutes} label="Minutes" /><CountdownUnit value={seconds} label="Seconds" /></div><p className="mt-8 text-xs font-medium text-white/70">The board will be available during the lecture window.</p></div></div>
+  return <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#dce4ff] bg-[#eef2ff] px-5 py-4 sm:flex-row sm:items-center"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">{isLive ? 'Lecture in progress' : 'Next discrete lecture'}</p><p className="mt-1 text-sm font-bold text-[#253354]">{event.title}</p><p className="mt-1 text-[11px] text-[#7180a2]">{target.toLocaleString()}</p></div><div className="flex items-baseline gap-1 text-[#2144d3]"><span className="text-2xl font-extrabold">{days}d</span><span className="text-2xl font-extrabold">{String(hours).padStart(2, '0')}h</span><span className="text-2xl font-extrabold">{String(minutes).padStart(2, '0')}m</span><span className="text-lg font-bold">{String(seconds).padStart(2, '0')}s</span></div></div>
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  return <div className="min-w-[62px] rounded-2xl bg-white/15 px-3 py-3 sm:min-w-[100px] sm:px-5 sm:py-4"><p className="text-3xl font-extrabold tracking-[-0.05em] text-white sm:text-5xl">{String(value).padStart(2, '0')}</p><p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/70 sm:text-[10px]">{label}</p></div>
 }
 
 function AdminView({ options, newOption, setNewOption, addOption, deleteOption, uploadLectures }: { options: BoardOption[]; newOption: string; setNewOption: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void; uploadLectures: (file: File) => void }) {

@@ -70,3 +70,5 @@ The board is available to everyone without signing in. Visitors can randomize an
 Press Enter in the admin prompt field to add an option. Use Shift+Enter when you need a line break.
 
 Admins can upload an `.ics` calendar file in **Manage options**. The app parses events whose titles contain both `discrete` and `lecture` (case-insensitive), stores them in Supabase, and displays a live countdown to the next lecture. Calendar times are adjusted by five minutes: a lecture starts at `DTSTART + 5 minutes` and ends at `DTEND - 5 minutes`.
+
+Boards are generated automatically, one hour after the previous lecture's adjusted end time. A board can only be played from five minutes before the scheduled start until five minutes after the scheduled end. Outside that window, the board is hidden and the next lecture countdown is shown.
