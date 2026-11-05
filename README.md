@@ -16,7 +16,9 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
    If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql) instead.
 
-4. Open **Project Settings → API** in Supabase. Copy `.env.example` to `.env.local` and fill in:
+4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
+
+5. Open **Project Settings → API** in Supabase. Copy `.env.example` to `.env.local` and fill in:
 
    ```text
    VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -25,16 +27,21 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
    The anon key is safe to use in this frontend. Never put the Supabase service-role key in `.env.local` or frontend code.
 
-5. Create an admin user in **Authentication → Users → Add user**.
+6. Create an account from the app’s **Create account** tab, or create one in **Authentication → Users**. The app stores the chosen username on the new profile.
 
-6. In **SQL Editor**, assign the user a username and promote that user by replacing the UUID and running:
+7. In **SQL Editor**, promote the user by replacing the UUID and running:
 
    ```sql
+   update public.profiles
+   set is_admin = true
+   where id = 'YOUR_AUTH_USER_UUID';
+
+   -- Or assign a username manually to an existing account:
    update public.profiles
    set username = 'ruben', is_admin = true
    where id = 'YOUR_AUTH_USER_UUID';
 
-   -- Or promote the user without a username:
+   -- If the profile row does not exist yet:
    insert into public.profiles (id, is_admin)
    values ('YOUR_AUTH_USER_UUID', true)
    on conflict (id) do update set is_admin = true;
@@ -42,7 +49,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
    Usernames must be 3–30 characters and contain only letters, numbers, and underscores. Admins can sign in with either their username or their Supabase email.
 
-7. Start the app:
+8. Start the app:
 
    ```powershell
    npm run dev
