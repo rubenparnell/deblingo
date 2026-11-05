@@ -208,7 +208,7 @@ function SidebarItem({ icon, label, active = false, onClick }: { icon: ReactNode
 }
 
 function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
-  const [email, setEmail] = useState('')
+  const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -217,13 +217,23 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
     event.preventDefault()
     setSubmitting(true)
     setError('')
+    let email = login.trim()
+    if (!email.includes('@')) {
+      const { data: usernameData, error: usernameError } = await supabase.rpc('get_email_for_username', { login_username: email })
+      if (usernameError || !usernameData) {
+        setError('We could not find an account with that username.')
+        setSubmitting(false)
+        return
+      }
+      email = usernameData
+    }
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     if (signInError) setError(signInError.message)
     if (data.user) onSignedIn(data.user)
     setSubmitting(false)
   }
 
-  return <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] px-5"><div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-8 shadow-[0_20px_60px_rgba(38,51,77,0.08)]"><div className="mb-8 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white">D</div><div><p className="text-[18px] font-bold tracking-[-0.03em]">deblingo</p><p className="text-[10px] font-semibold uppercase tracking-[0.17em] text-[#9ba4b5]">team games</p></div></div><h1 className="text-2xl font-extrabold tracking-[-0.04em]">Welcome back.</h1><p className="mt-2 text-sm text-[#748096]">Sign in to access your team’s bingo board.</p><form onSubmit={signIn} className="mt-7"><label className="mb-2 block text-xs font-bold text-[#59667c]">Email</label><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="you@company.com" /><label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">Password</label><input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="Your password" />{error && <p className="mt-4 rounded-lg bg-[#fff5f5] p-3 text-xs text-[#b34e4e]">{error}</p>}<button disabled={submitting} className="mt-6 w-full rounded-xl bg-[#2144d3] py-3 text-sm font-bold text-white transition hover:bg-[#1738bd] disabled:opacity-50">{submitting ? 'Signing in…' : 'Sign in'}</button></form></div></div>
+  return <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] px-5"><div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-8 shadow-[0_20px_60px_rgba(38,51,77,0.08)]"><div className="mb-8 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white">D</div><div><p className="text-[18px] font-bold tracking-[-0.03em]">deblingo</p><p className="text-[10px] font-semibold uppercase tracking-[0.17em] text-[#9ba4b5]">team games</p></div></div><h1 className="text-2xl font-extrabold tracking-[-0.04em]">Welcome back.</h1><p className="mt-2 text-sm text-[#748096]">Sign in to manage your team’s board.</p><form onSubmit={signIn} className="mt-7"><label className="mb-2 block text-xs font-bold text-[#59667c]">Username or email</label><input required type="text" value={login} onChange={(event) => setLogin(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="username or you@company.com" /><label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">Password</label><input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="Your password" />{error && <p className="mt-4 rounded-lg bg-[#fff5f5] p-3 text-xs text-[#b34e4e]">{error}</p>}<button disabled={submitting} className="mt-6 w-full rounded-xl bg-[#2144d3] py-3 text-sm font-bold text-white transition hover:bg-[#1738bd] disabled:opacity-50">{submitting ? 'Signing in…' : 'Sign in'}</button></form></div></div>
 }
 
 function AdminDenied({ onBack }: { onBack: () => void }) {
