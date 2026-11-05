@@ -58,11 +58,23 @@ button {
   border-color: #334155;
 }
 
+.dark-theme.text-\[\#182230\],
 .dark-theme .text-\[\#182230\],
 .dark-theme .text-\[\#15202e\],
 .dark-theme .text-\[\#354154\],
-.dark-theme .text-\[\#26344b\] {
+.dark-theme .text-\[\#26344b\],
+.dark-theme .text-\[\#182230\] {
   color: #e5e7eb;
+}
+
+.dark-theme .text-\[\#7b3e31\] {
+  color: #3b241d;
+}
+
+.dark-theme .text-\[\#647086\],
+.dark-theme .text-\[\#59667c\],
+.dark-theme .text-\[\#8993a5\] {
+  color: #cbd5e1;
 }
 
 .dark-theme .text-\[\#748096\],
@@ -92,6 +104,18 @@ button {
 .dark-theme .bg-\[\#f3f5fa\],
 .dark-theme .bg-\[\#f6f7fa\] {
   background-color: #253252;
+}
+
+.dark-theme .bg-\[\#fff5f5\] {
+  background-color: #3a2026;
+}
+
+.dark-theme .text-\[\#b34e4e\] {
+  color: #fca5a5;
+}
+
+.dark-theme .border-\[\#f1caca\] {
+  border-color: #7f3f46;
 }
 
 .dark-theme .shadow-\[0_15px_40px_rgba\(38\,51\,77\,0\.06\)\],
