@@ -49,4 +49,4 @@ npm run lint
 npm run preview
 ```
 
-The board is available to signed-in users. Board options are shared through Supabase, while adding and deleting options is restricted by database row-level security to users whose `profiles.is_admin` value is `true`.
+The board is available to everyone without signing in. Visitors can randomize and mark their own board locally. Supabase login is only requested when someone opens **Manage options**. Board options are shared through Supabase, while adding and deleting options is restricted by database row-level security to users whose `profiles.is_admin` value is `true`.

@@ -131,8 +131,6 @@ function App() {
   }
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] text-sm font-semibold text-[#748096]">Loading your board…</div>
-  if (!user) return <AuthView onSignedIn={setUser} />
-
   return (
     <div className="min-h-screen bg-[#f7f8fb] text-[#182230]">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[252px] flex-col border-r border-[#e7eaf0] bg-white lg:flex">
@@ -146,7 +144,7 @@ function App() {
         <div className="flex flex-1 flex-col px-4 py-7">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Workspace</p>
           <SidebarItem icon={<LayoutDashboard size={17} />} label="Board" active={view === 'board'} onClick={() => setView('board')} />
-          {isAdmin && <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />}
+          <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />
           <div className="mt-8 border-t border-[#eef0f4] pt-6">
             <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Account</p>
             <SidebarItem icon={<Users size={17} />} label="Team members" />
@@ -161,8 +159,8 @@ function App() {
         </div>
         <div className="flex items-center gap-3 border-t border-[#e7eaf0] px-6 py-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5b69d] text-[11px] font-bold text-[#7b3e31]">RP</div>
-          <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">Ruben Parnell</p><p className="text-[10px] text-[#98a2b3]">Admin</p></div>
-          <button aria-label="Log out" onClick={() => supabase.auth.signOut()} className="text-[#a8b0bf]"><LogOut size={15} /></button>
+          <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{user ? 'Ruben Parnell' : 'Playing as guest'}</p><p className="text-[10px] text-[#98a2b3]">{user ? 'Admin' : 'No login needed'}</p></div>
+          {user && <button aria-label="Log out" onClick={() => supabase.auth.signOut()} className="text-[#a8b0bf]"><LogOut size={15} /></button>}
         </div>
       </aside>
 
@@ -184,7 +182,7 @@ function App() {
         </header>
 
         {error && <div className="mx-auto mt-5 max-w-[1120px] rounded-xl border border-[#f1caca] bg-[#fff5f5] px-4 py-3 text-xs text-[#b34e4e]">{error}</div>}
-        {view === 'board' || !isAdmin ? (
+        {view === 'board' ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div><div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]"><span className="h-2 w-2 rounded-full bg-[#32c184]" /> Live board</div><h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">Find the fun in<br /><span className="text-[#2144d3]">the everyday.</span></h2><p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">Mark a square whenever you spot it. Get five in a row to call bingo!</p></div>
@@ -201,8 +199,12 @@ function App() {
             </div>
             <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-[#8d98aa]"><Sparkles size={14} className="text-[#f5ad3c]" /> Built for better breaks, one square at a time.</div>
           </section>
-        ) : (
+        ) : isAdmin ? (
           <AdminView options={options} categories={categories} newOption={newOption} newCategory={newCategory} setNewOption={setNewOption} setNewCategory={setNewCategory} addOption={addOption} deleteOption={deleteOption} />
+        ) : user ? (
+          <AdminDenied onBack={() => setView('board')} />
+        ) : (
+          <AuthView onSignedIn={setUser} />
         )}
       </main>
     </div>
@@ -230,6 +232,10 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
   }
 
   return <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] px-5"><div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-8 shadow-[0_20px_60px_rgba(38,51,77,0.08)]"><div className="mb-8 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white">D</div><div><p className="text-[18px] font-bold tracking-[-0.03em]">deblingo</p><p className="text-[10px] font-semibold uppercase tracking-[0.17em] text-[#9ba4b5]">team games</p></div></div><h1 className="text-2xl font-extrabold tracking-[-0.04em]">Welcome back.</h1><p className="mt-2 text-sm text-[#748096]">Sign in to access your team’s bingo board.</p><form onSubmit={signIn} className="mt-7"><label className="mb-2 block text-xs font-bold text-[#59667c]">Email</label><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="you@company.com" /><label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">Password</label><input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]" placeholder="Your password" />{error && <p className="mt-4 rounded-lg bg-[#fff5f5] p-3 text-xs text-[#b34e4e]">{error}</p>}<button disabled={submitting} className="mt-6 w-full rounded-xl bg-[#2144d3] py-3 text-sm font-bold text-white transition hover:bg-[#1738bd] disabled:opacity-50">{submitting ? 'Signing in…' : 'Sign in'}</button></form></div></div>
+}
+
+function AdminDenied({ onBack }: { onBack: () => void }) {
+  return <section className="mx-auto max-w-[600px] px-5 py-20 text-center sm:px-10"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e7] text-2xl">🔒</div><h2 className="mt-5 text-2xl font-extrabold tracking-[-0.04em]">Admin access only.</h2><p className="mx-auto mt-2 max-w-[400px] text-sm leading-6 text-[#748096]">This account can play bingo, but it does not have permission to change the board options.</p><button onClick={onBack} className="mt-6 rounded-xl bg-[#2144d3] px-5 py-3 text-sm font-bold text-white">Back to board</button></section>
 }
 
 function AdminView({ options, categories, newOption, newCategory, setNewOption, setNewCategory, addOption, deleteOption }: { options: BoardOption[]; categories: string[]; newOption: string; newCategory: string; setNewOption: (value: string) => void; setNewCategory: (value: string) => void; addOption: () => void; deleteOption: (id: number) => void }) {
