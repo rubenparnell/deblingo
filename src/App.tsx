@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
-  ArrowUpRight,
   Check,
   ChevronDown,
   CircleHelp,
@@ -11,10 +10,8 @@ import {
   LogOut,
   Plus,
   RotateCcw,
-  Settings,
   Sparkles,
   Trash2,
-  Users,
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
@@ -40,6 +37,10 @@ function createBoard(options: BoardOption[]) {
 }
 
 function App() {
+  const [boardDate] = useState(() => new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date()))
   const [view, setView] = useState<View>('board')
   const [options, setOptions] = useState<BoardOption[]>([])
   const [board, setBoard] = useState<BoardOption[]>([])
@@ -49,6 +50,7 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -68,8 +70,9 @@ function App() {
       if (optionsError) setError(optionsError.message)
       setUser(userData.user)
       if (userData.user) {
-        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', userData.user.id).maybeSingle()
+        const { data: profile } = await supabase.from('profiles').select('username, is_admin').eq('id', userData.user.id).maybeSingle()
         setIsAdmin(profile?.is_admin === true)
+        setUsername(profile?.username ?? userData.user.email?.split('@')[0] ?? 'User')
       }
       if (data) {
         setOptions(data)
@@ -82,10 +85,12 @@ function App() {
       setUser(session?.user ?? null)
       if (!session?.user) {
         setIsAdmin(false)
+        setUsername('')
         return
       }
-      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).maybeSingle()
+      const { data: profile } = await supabase.from('profiles').select('username, is_admin').eq('id', session.user.id).maybeSingle()
       setIsAdmin(profile?.is_admin === true)
+      setUsername(profile?.username ?? session.user.email?.split('@')[0] ?? 'User')
     })
     return () => {
       active = false
@@ -143,11 +148,11 @@ function App() {
         <div className="flex flex-1 flex-col px-4 py-7">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a3acbb]">Workspace</p>
           <SidebarItem icon={<LayoutDashboard size={17} />} label="Board" active={view === 'board'} onClick={() => setView('board')} />
-          <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />
+          {isAdmin && <SidebarItem icon={<ClipboardList size={17} />} label="Manage options" active={view === 'admin'} onClick={() => setView('admin')} />}
         </div>
         <div className="flex items-center gap-3 border-t border-[#e7eaf0] px-6 py-5">
-          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${user ? 'bg-[#f5b69d] text-[#7b3e31]' : 'bg-[#eef2ff] text-[#2144d3]'}`}>{user ? 'RP' : 'G'}</div>
-          <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{user ? 'Ruben Parnell' : 'Playing as guest'}</p><p className="text-[10px] text-[#98a2b3]">{user ? 'Admin' : 'No login needed'}</p></div>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${user ? 'bg-[#f5b69d] text-[#7b3e31]' : 'bg-[#eef2ff] text-[#2144d3]'}`}>{user ? username.slice(0, 2).toUpperCase() : 'G'}</div>
+          <div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{user ? username : 'Playing as guest'}</p><p className="text-[10px] text-[#98a2b3]">{user ? (isAdmin ? 'Admin' : 'Member') : 'No login needed'}</p></div>
           {user && <button aria-label="Log out" onClick={() => supabase.auth.signOut()} className="text-[#a8b0bf]"><LogOut size={15} /></button>}
         </div>
       </aside>
@@ -162,12 +167,12 @@ function App() {
             {user ? (
               <div className="relative">
                 <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">RP</span><ChevronDown size={14} className="text-[#8993a5]" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">{username.slice(0, 2).toUpperCase()}</span><ChevronDown size={14} className="text-[#8993a5]" />
                 </button>
                 {showProfile && <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl"><button className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Profile</button><button onClick={() => supabase.auth.signOut()} className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">Sign out</button></div>}
               </div>
             ) : (
-              <span className="rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#7b879a]">Guest</span>
+              <button onClick={() => setView('admin')} className="rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#7b879a] transition hover:border-[#b8c4ee] hover:text-[#2144d3]">Guest</button>
             )}
           </div>
         </header>
@@ -180,7 +185,7 @@ function App() {
               <div className="flex items-center gap-3"><div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">Marked</p><p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">{marked.length}<span className="text-sm font-semibold text-[#a8b1c0]"> / 24</span></p></div><button onClick={randomizeBoard} className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-4 py-3 text-[12px] font-bold text-white shadow-[0_7px_18px_rgba(33,68,211,0.2)] transition hover:bg-[#1738bd]"><Dice5 size={16} /> New board</button></div>
             </div>
             <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
-              <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a0a9b8]">May 2025 · edition 04</p><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
+              <div className="mb-4 flex items-center justify-between px-1 sm:px-2"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a0a9b8]">{boardDate} · live board</p><button onClick={() => setMarked([])} className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"><RotateCcw size={13} /> Clear marks</button></div>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {board.map((option, index) => {
                   const isMarked = option.id === 0 || marked.includes(option.id)
