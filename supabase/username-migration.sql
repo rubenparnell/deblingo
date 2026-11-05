@@ -27,3 +27,27 @@ as $$
 $$;
 
 grant execute on function public.get_email_for_username(text) to anon, authenticated;
+
+create or replace function public.set_my_username(new_username text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'You must be signed in';
+  end if;
+
+  if lower(trim(new_username)) !~ '^[a-z0-9_]{3,30}$' then
+    raise exception 'Username must be 3-30 characters using letters, numbers, or underscores';
+  end if;
+
+  insert into public.profiles (id, username)
+  values (auth.uid(), lower(trim(new_username)))
+  on conflict (id) do update
+    set username = excluded.username;
+end;
+$$;
+
+grant execute on function public.set_my_username(text) to authenticated;
