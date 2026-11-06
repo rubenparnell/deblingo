@@ -19,6 +19,7 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  X,
   Moon,
   Sun,
 } from "lucide-react";
@@ -48,6 +49,14 @@ type HistoryEntry = {
   board: BoardOption[];
   marked_ids: number[];
   score: number;
+};
+
+type Suggestion = {
+  id: number;
+  label: string;
+  status: "pending" | "accepted" | "rejected";
+  created_at: string;
+  suggested_by: string;
 };
 
 function getLectureTiming(lecture: Lecture) {
@@ -96,6 +105,8 @@ function App() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [authResolved, setAuthResolved] = useState(false);
   const [historyReadyFor, setHistoryReadyFor] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [newSuggestion, setNewSuggestion] = useState("");
   const skipHistorySave = useRef(false);
   const historyInteraction = useRef(false);
 
@@ -201,6 +212,27 @@ function App() {
 
     void loadHistory();
   }, [authResolved, user]);
+
+  useEffect(() => {
+    if (!authResolved || !user) {
+      setSuggestions([]);
+      return;
+    }
+
+    const loadSuggestions = async () => {
+      const { data, error: suggestionsError } = await supabase
+        .from("board_suggestions")
+        .select("id, label, status, created_at, suggested_by")
+        .order("created_at", { ascending: false });
+      if (suggestionsError) {
+        setError(suggestionsError.message);
+        return;
+      }
+      setSuggestions((data ?? []) as Suggestion[]);
+    };
+
+    void loadSuggestions();
+  }, [authResolved, user, isAdmin]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setClock(new Date()), 1000);
@@ -340,6 +372,63 @@ function App() {
     setNewOption("");
   };
 
+  const addSuggestion = async () => {
+    const label = newSuggestion.trim();
+    if (!label || !user) return;
+    const { data, error: suggestionError } = await supabase
+      .from("board_suggestions")
+      .insert({ label, suggested_by: user.id })
+      .select("id, label, status, created_at, suggested_by")
+      .single();
+    if (suggestionError) {
+      setError(suggestionError.message);
+      return;
+    }
+    if (data) setSuggestions((current) => [data as Suggestion, ...current]);
+    setNewSuggestion("");
+  };
+
+  const reviewSuggestion = async (
+    suggestion: Suggestion,
+    status: "accepted" | "rejected",
+  ) => {
+    if (!user || !isAdmin) return;
+    if (status === "accepted") {
+      const { data: option, error: optionError } = await supabase
+        .from("board_options")
+        .insert({ label: suggestion.label, created_by: user.id })
+        .select("id, label")
+        .single();
+      if (optionError) {
+        setError(optionError.message);
+        return;
+      }
+      if (option) setOptions((current) => [...current, option]);
+    }
+
+    const { data, error: reviewError } = await supabase
+      .from("board_suggestions")
+      .update({
+        status,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", suggestion.id)
+      .select("id, label, status, created_at, suggested_by")
+      .single();
+    if (reviewError) {
+      setError(reviewError.message);
+      return;
+    }
+    if (data) {
+      setSuggestions((current) =>
+        current.map((item) =>
+          item.id === suggestion.id ? (data as Suggestion) : item,
+        ),
+      );
+    }
+  };
+
   const uploadLectures = async (file: File) => {
     try {
       const calendar = new ICAL.Component(ICAL.parse(await file.text()));
@@ -467,6 +556,14 @@ function App() {
             active={view === "history"}
             onClick={() => setView("history")}
           />
+          {user && !isAdmin && (
+            <SidebarItem
+              icon={<Plus size={17} />}
+              label="Suggest options"
+              active={view === "admin"}
+              onClick={() => setView("admin")}
+            />
+          )}
           {isAdmin && (
             <SidebarItem
               icon={<ClipboardList size={17} />}
@@ -510,7 +607,9 @@ function App() {
                 ? ""
                 : view === "history"
                   ? "Lecture history"
-                  : "Manage board options"}
+                  : isAdmin
+                    ? "Manage board options"
+                    : "Suggest board options"}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -670,9 +769,16 @@ function App() {
             addOption={addOption}
             deleteOption={deleteOption}
             uploadLectures={uploadLectures}
+            suggestions={suggestions}
+            reviewSuggestion={reviewSuggestion}
           />
         ) : user ? (
-          <AdminDenied onBack={() => setView("board")} />
+          <SuggestionsView
+            suggestions={suggestions}
+            newSuggestion={newSuggestion}
+            setNewSuggestion={setNewSuggestion}
+            addSuggestion={addSuggestion}
+          />
         ) : (
           <AuthView onSignedIn={setUser} />
         )}
@@ -968,26 +1074,126 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
   );
 }
 
-function AdminDenied({ onBack }: { onBack: () => void }) {
+function SuggestionsView({
+  suggestions,
+  newSuggestion,
+  setNewSuggestion,
+  addSuggestion,
+}: {
+  suggestions: Suggestion[];
+  newSuggestion: string;
+  setNewSuggestion: (value: string) => void;
+  addSuggestion: () => void;
+}) {
   return (
-    <section className="mx-auto max-w-[600px] px-5 py-20 text-center sm:px-10">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e7] text-2xl">
-        🔒
+    <section className="mx-auto max-w-[700px] px-5 py-12 sm:px-10 lg:px-14">
+      <div className="mb-8">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
+          Community ideas
+        </p>
+        <h2 className="text-[32px] font-extrabold tracking-[-0.055em]">
+          Suggest a board option.
+        </h2>
+        <p className="mt-2 text-[13px] text-[#748096]">
+          Suggest a prompt for an admin to review and add to future boards.
+        </p>
       </div>
-      <h2 className="mt-5 text-2xl font-extrabold tracking-[-0.04em]">
-        Admin access only.
-      </h2>
-      <p className="mx-auto mt-2 max-w-[400px] text-sm leading-6 text-[#748096]">
-        This account can play bingo, but it does not have permission to change
-        the board options.
-      </p>
-      <button
-        onClick={onBack}
-        className="mt-6 rounded-xl bg-[#2144d3] px-5 py-3 text-sm font-bold text-white"
-      >
-        Back to board
-      </button>
+      <div className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+        <textarea
+          value={newSuggestion}
+          onChange={(event) => setNewSuggestion(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              addSuggestion();
+            }
+          }}
+          placeholder="e.g. Someone says 'Can everyone hear me?'"
+          rows={4}
+          maxLength={120}
+          className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
+        />
+        <button
+          onClick={addSuggestion}
+          disabled={!newSuggestion.trim()}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus size={15} /> Submit suggestion
+        </button>
+      </div>
+      <SuggestionList suggestions={suggestions} />
     </section>
+  );
+}
+
+function SuggestionList({
+  suggestions,
+  reviewSuggestion,
+}: {
+  suggestions: Suggestion[];
+  reviewSuggestion?: (
+    suggestion: Suggestion,
+    status: "accepted" | "rejected",
+  ) => void;
+}) {
+  return (
+    <div className="mt-6 rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+      <div className="border-b border-[#edf0f4] px-5 py-4">
+        <h3 className="text-[13px] font-bold">
+          {reviewSuggestion ? "Pending suggestions" : "Your suggestions"}
+        </h3>
+      </div>
+      {suggestions.length ? (
+        <div className="divide-y divide-[#f0f2f5]">
+          {suggestions.map((suggestion) => (
+            <div
+              key={suggestion.id}
+              className="flex items-center gap-3 px-5 py-4"
+            >
+              <p className="min-w-0 flex-1 text-[12px] font-semibold text-[#354154]">
+                {suggestion.label}
+              </p>
+              {reviewSuggestion && suggestion.status === "pending" ? (
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    aria-label={`Accept ${suggestion.label}`}
+                    onClick={() => reviewSuggestion(suggestion, "accepted")}
+                    className="rounded-lg bg-[#effaf5] p-2 text-[#237a56] hover:bg-[#d9f5e8]"
+                  >
+                    <Check size={15} />
+                  </button>
+                  <button
+                    aria-label={`Reject ${suggestion.label}`}
+                    onClick={() => reviewSuggestion(suggestion, "rejected")}
+                    className="rounded-lg bg-[#fff5f5] p-2 text-[#b34e4e] hover:bg-[#ffe4e4]"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : (
+                <span
+                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold capitalize ${
+                    suggestion.status === "accepted"
+                      ? "bg-[#effaf5] text-[#237a56]"
+                      : suggestion.status === "rejected"
+                        ? "bg-[#fff5f5] text-[#b34e4e]"
+                        : "bg-[#fff8e8] text-[#9a6b13]"
+                  }`}
+                >
+                  {suggestion.status}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="px-5 py-6 text-sm text-[#748096]">
+          {reviewSuggestion
+            ? "There are no suggestions to review."
+            : "You have not submitted any suggestions yet."}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -1125,6 +1331,8 @@ function AdminView({
   addOption,
   deleteOption,
   uploadLectures,
+  suggestions,
+  reviewSuggestion,
 }: {
   options: BoardOption[];
   newOption: string;
@@ -1132,6 +1340,11 @@ function AdminView({
   addOption: () => void;
   deleteOption: (id: number) => void;
   uploadLectures: (file: File) => void;
+  suggestions: Suggestion[];
+  reviewSuggestion: (
+    suggestion: Suggestion,
+    status: "accepted" | "rejected",
+  ) => void;
 }) {
   const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1162,24 +1375,13 @@ function AdminView({
           </p>
         </div>
       </div>
-      <div className="mb-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
-        <h3 className="text-[13px] font-bold">Lecture calendar</h3>
-        <p className="mt-1 text-[11px] text-[#9aa4b4]">
-          Upload an ICS file. Events containing both “discrete” and “lecture” in
-          the title will be saved.
-        </p>
-        <input
-          type="file"
-          accept=".ics,text/calendar"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) uploadLectures(file);
-            event.currentTarget.value = "";
-          }}
-          className="mt-4 block w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px]"
-        />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
+      <SuggestionList
+        suggestions={suggestions.filter(
+          (suggestion) => suggestion.status === "pending",
+        )}
+        reviewSuggestion={reviewSuggestion}
+      />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[350px_1fr]">
         <div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
           <div className="mb-5 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]">
@@ -1248,6 +1450,23 @@ function AdminView({
             ))}
           </div>
         </div>
+      </div>
+      <div className="mt-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+        <h3 className="text-[13px] font-bold">Lecture calendar</h3>
+        <p className="mt-1 text-[11px] text-[#9aa4b4]">
+          Upload an ICS file. Events containing both “discrete” and “lecture” in
+          the title will be saved.
+        </p>
+        <input
+          type="file"
+          accept=".ics,text/calendar"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) uploadLectures(file);
+            event.currentTarget.value = "";
+          }}
+          className="mt-4 block w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px]"
+        />
       </div>
     </section>
   );

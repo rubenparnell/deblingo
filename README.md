@@ -14,7 +14,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
-   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), and [`supabase/history-migration.sql`](./supabase/history-migration.sql) instead.
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), [`supabase/history-migration.sql`](./supabase/history-migration.sql), and [`supabase/suggestions-migration.sql`](./supabase/suggestions-migration.sql) instead.
 
 4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
 
@@ -74,3 +74,5 @@ Admins can upload an `.ics` calendar file in **Manage options**. The app parses 
 Each lecture gets one stable randomized board, generated and saved when its playable window opens. The board and marks reset when the active lecture changes. Outside a lecture's playable window, the board is hidden and the next lecture countdown is shown. Admin mode bypasses the lecture window; outside a lecture it uses a separate admin board, while during a lecture it displays that lecture's board. Admin-mode marks are never saved to history.
 
 The **History** view stores each logged-in user's lecture board, marked squares, and score in Supabase while the lecture is playable. The score is updated after each mark or unmark and is final once the playable window closes. Guests get the same history experience in their current browser using local storage.
+
+Signed-in non-admin users can open **Suggest options** to submit board ideas. Admins review pending suggestions in **Manage options** and can accept them into the board or reject them.
