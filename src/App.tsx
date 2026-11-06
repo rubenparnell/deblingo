@@ -673,7 +673,7 @@ function App() {
             {nextLecture && !adminMode && (
               <CountdownCard event={nextLecture} now={clock} compact />
             )}
-            {isAdmin && (
+            {isAdmin && view === "board" && (
               <button
                 onClick={() => {
                   setAdminMode((current) => {
