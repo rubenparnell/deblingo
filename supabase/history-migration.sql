@@ -8,6 +8,7 @@ create table public.lecture_history (
   board jsonb not null,
   marked_ids bigint[] not null default '{}',
   score integer not null default 0 check (score >= 0),
+  completed_lines integer not null default 0 check (completed_lines >= 0),
   updated_at timestamptz not null default now(),
   unique (user_id, source_uid)
 );

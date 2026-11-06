@@ -60,6 +60,7 @@ type HistoryEntry = {
   board: BoardOption[];
   marked_ids: number[];
   score: number;
+  completed_lines?: number;
 };
 
 type Suggestion = {
@@ -117,6 +118,24 @@ function createBoard(
     );
   }
   return shuffled(selected).slice(0, 25);
+}
+
+function getCompletedLines(board: BoardOption[], markedIds: number[]) {
+  const marked = new Set(markedIds);
+  const lines = [
+    ...Array.from({ length: 5 }, (_, row) =>
+      Array.from({ length: 5 }, (_, column) => row * 5 + column),
+    ),
+    ...Array.from({ length: 5 }, (_, column) =>
+      Array.from({ length: 5 }, (_, row) => row * 5 + column),
+    ),
+    Array.from({ length: 5 }, (_, index) => index * 6),
+    Array.from({ length: 5 }, (_, index) => (index + 1) * 4),
+  ];
+
+  return lines.filter((line) =>
+    line.every((index) => board[index] && marked.has(board[index].id)),
+  ).length;
 }
 
 function getReadableError(message: string) {
@@ -270,7 +289,7 @@ function App() {
         const { data, error: historyError } = await supabase
           .from("lecture_history")
           .select(
-            "id, source_uid, title, starts_at, ends_at, board, marked_ids, score",
+            "id, source_uid, title, starts_at, ends_at, board, marked_ids, score, completed_lines",
           )
           .order("starts_at", { ascending: false });
         if (historyError) {
@@ -398,6 +417,7 @@ function App() {
       board,
       marked_ids: marked,
       score: marked.length,
+      completed_lines: getCompletedLines(board, marked),
     };
 
     if (user) {
@@ -412,7 +432,7 @@ function App() {
           { onConflict: "user_id,source_uid" },
         )
         .select(
-          "id, source_uid, title, starts_at, ends_at, board, marked_ids, score",
+          "id, source_uid, title, starts_at, ends_at, board, marked_ids, score, completed_lines",
         )
         .single()
         .then(({ data, error: historyError }) => {
@@ -852,6 +872,18 @@ function App() {
                       </span>
                     </p>
                   </div>
+                  <div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">
+                      Lines
+                    </p>
+                    <p className="mt-0.5 text-lg font-extrabold text-[#2144d3]">
+                      {getCompletedLines(board, marked)}
+                      <span className="text-sm font-semibold text-[#a8b1c0]">
+                        {" "}
+                        / 12
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -988,6 +1020,11 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
                     {" "}
                     / {entry.board.length}
                   </span>
+                </p>
+                <p className="mt-1 text-[11px] font-semibold text-[#748096]">
+                  {entry.completed_lines ??
+                    getCompletedLines(entry.board, entry.marked_ids)}{" "}
+                  completed lines
                 </p>
               </div>
             </div>
