@@ -170,7 +170,7 @@ export function LeaderboardPage({
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#e7eaf0]">
+              <tbody className="leaderboard-list divide-y divide-[#e7eaf0]">
                 {selectedEntries.map((entry, index) => {
                   const playerKey = `${entry.source_uid}-${entry.username}`;
                   const isExpanded = expandedPlayers.has(playerKey);

@@ -141,6 +141,14 @@ button {
   border-color: #7f3f46;
 }
 
+.dark-theme .board-options-list > :not(:last-child) {
+  border-color: #273449;
+}
+
+.dark-theme .leaderboard-list > :not(:last-child) {
+  border-color: #273449;
+}
+
 .dark-theme .bg-\[\#effaf5\] {
   background-color: #17352b;
 }

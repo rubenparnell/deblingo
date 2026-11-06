@@ -47,15 +47,15 @@ export function AdminView({
             Admin controls
           </p>
           <h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">
-            Shape your board.
+            Board options
           </h2>
           <p className="mt-2 text-[13px] text-[#748096]">
-            Add prompts your team will instantly recognize.
+            Add new squares.
           </p>
         </div>
         <div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block">
           <p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">
-            Available prompts
+            Available options
           </p>
           <p className="text-xl font-extrabold text-[#2144d3]">
             {options.length}
@@ -127,7 +127,7 @@ export function AdminView({
               boardOptionsExpanded ? "max-h-[10000px]" : "max-h-[12.5rem]"
             }`}
           >
-            <div className="divide-y divide-[#f0f2f5] border-t border-[#edf0f4]">
+            <div className="board-options-list divide-y divide-[#f0f2f5] border-t border-[#edf0f4]">
               {options.map((option) => (
                 <div
                   key={option.id}
