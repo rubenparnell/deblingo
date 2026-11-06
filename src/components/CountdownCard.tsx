@@ -59,7 +59,7 @@ export function CountdownCard({
     );
   if (emptyState)
     return (
-      <div className="flex min-h-[calc(100dvh-88px)] items-center justify-center py-10">
+      <div className="flex min-h-[calc(100dvh-7rem)] items-center justify-center py-6 sm:min-h-[calc(100dvh-88px)] sm:py-10">
         <div className="w-full max-w-[760px] rounded-[30px] bg-[#2144d3] px-6 py-14 text-center shadow-[0_20px_60px_rgba(33,68,211,0.24)] sm:px-10 sm:py-20">
           <h2 className="text-3xl font-extrabold text-white sm:text-3xl">
             {isClosing

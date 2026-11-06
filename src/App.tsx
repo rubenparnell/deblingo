@@ -588,7 +588,7 @@ function App() {
       >
         Skip to content
       </a>
-      <main id="main-content" className="min-h-screen">
+      <main id="main-content">
         <header className="sticky top-0 z-20 border-b border-[#e7eaf0] bg-white">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 lg:px-10">
             <button
@@ -640,7 +640,7 @@ function App() {
               {isAdmin && (
                 <SidebarItem
                   icon={<ClipboardList size={16} />}
-                  label="Manage options"
+                  label="Admin Options"
                   active={view === "admin"}
                   onClick={() => setView("admin")}
                 />
@@ -670,7 +670,7 @@ function App() {
                   darkMode ? "Switch to light mode" : "Switch to dark mode"
                 }
                 onClick={() => setDarkMode((current) => !current)}
-                className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e3e7ed] p-0 text-[#647086] transition hover:text-[#2144d3]"
               >
                 {darkMode ? <Sun size={16} /> : <Moon size={16} />}
               </button>

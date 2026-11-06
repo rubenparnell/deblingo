@@ -43,15 +43,9 @@ export function AdminView({
     <section className="mx-auto max-w-[1050px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
-            Admin controls
-          </p>
           <h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">
-            Board options
+            Admin options
           </h2>
-          <p className="mt-2 text-[13px] text-[#748096]">
-            Add new squares.
-          </p>
         </div>
         <div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block">
           <p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">
@@ -123,7 +117,6 @@ export function AdminView({
             />
           </button>
           <div
-            inert={!boardOptionsExpanded}
             className={`relative overflow-hidden transition-[max-height] duration-300 ease-in-out motion-reduce:transition-none ${
               boardOptionsExpanded ? "max-h-[10000px]" : "max-h-[12.5rem]"
             }`}

@@ -104,9 +104,6 @@ export function LeaderboardPage({
   return (
     <section className="mx-auto max-w-[1050px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
-          Top players
-        </p>
         <h2 className="text-3xl font-extrabold tracking-[-0.05em]">
           Lecture leaderboard
         </h2>

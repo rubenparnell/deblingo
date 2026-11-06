@@ -70,7 +70,7 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#f7f8fb] px-4 py-5 sm:px-5">
+    <div className="flex min-h-[calc(100dvh-7rem)] items-center justify-center bg-[#f7f8fb] px-4 py-5 sm:min-h-[calc(100dvh-88px)] sm:px-5">
       <div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-5 shadow-[0_20px_60px_rgba(38,51,77,0.08)] sm:p-8">
         <div className="mb-6 grid grid-cols-2 rounded-xl bg-[#f3f5fa] p-1">
           <button
