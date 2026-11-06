@@ -12,7 +12,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 2. Create a Supabase project at [supabase.com](https://supabase.com).
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
-   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), [`supabase/history-migration.sql`](./supabase/history-migration.sql), [`supabase/suggestions-migration.sql`](./supabase/suggestions-migration.sql), [`supabase/difficulty-migration.sql`](./supabase/difficulty-migration.sql), [`supabase/lines-completed-migration.sql`](./supabase/lines-completed-migration.sql), [`supabase/history-lines-trigger-migration.sql`](./supabase/history-lines-trigger-migration.sql), [`supabase/leaderboard-boards-migration.sql`](./supabase/leaderboard-boards-migration.sql), and [`supabase/leaderboard-admin-delete-migration.sql`](./supabase/leaderboard-admin-delete-migration.sql) instead.
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/username-casing-migration.sql`](./supabase/username-casing-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), [`supabase/history-migration.sql`](./supabase/history-migration.sql), [`supabase/suggestions-migration.sql`](./supabase/suggestions-migration.sql), [`supabase/difficulty-migration.sql`](./supabase/difficulty-migration.sql), [`supabase/lines-completed-migration.sql`](./supabase/lines-completed-migration.sql), [`supabase/history-lines-trigger-migration.sql`](./supabase/history-lines-trigger-migration.sql), [`supabase/leaderboard-boards-migration.sql`](./supabase/leaderboard-boards-migration.sql), and [`supabase/leaderboard-admin-delete-migration.sql`](./supabase/leaderboard-admin-delete-migration.sql) instead.
 4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
 5. Open **Project Settings → API** in Supabase. Copy `.env.example` to `.env.local` and fill in:
 
@@ -41,7 +41,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
    on conflict (id) do update set is_admin = true;
    ```
 
-   Usernames must be 3–30 characters and contain only letters, numbers, and underscores. Admins can sign in with either their username or their Supabase email.
+   Usernames must be 3-30 characters and contain only letters, numbers, and underscores. Capitalization is displayed as entered, but usernames are unique and sign-in is case-insensitive. Passwords must be at least 8 characters. Admins can sign in with either their username or their Supabase email.
 8. Start the app:
 
    ```powershell

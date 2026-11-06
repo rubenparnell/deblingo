@@ -44,7 +44,7 @@ begin
   end if;
 
   insert into public.profiles (id, username)
-  values (auth.uid(), lower(trim(new_username)))
+  values (auth.uid(), trim(new_username))
   on conflict (id) do update
     set username = excluded.username;
 end;

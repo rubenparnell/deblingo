@@ -20,11 +20,30 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
     setMessage("");
 
     if (mode === "signup") {
-      const cleanUsername = username.trim().toLowerCase();
-      if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+      const cleanUsername = username.trim();
+      if (!/^[A-Za-z0-9_]{3,30}$/.test(cleanUsername)) {
         setError(
-          "Username must be 3–30 characters using only letters, numbers, and underscores.",
+          "Username must be 3-30 characters using only letters, numbers, and underscores.",
         );
+        setSubmitting(false);
+        return;
+      }
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters.");
+        setSubmitting(false);
+        return;
+      }
+      const { data: existingUsername, error: usernameLookupError } =
+        await supabase.rpc("get_email_for_username", {
+          login_username: cleanUsername,
+        });
+      if (usernameLookupError) {
+        setError("We could not check whether that username is available.");
+        setSubmitting(false);
+        return;
+      }
+      if (existingUsername) {
+        setError("That username is already taken. Please choose another.");
         setSubmitting(false);
         return;
       }
@@ -33,7 +52,13 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
         password,
         options: { data: { username: cleanUsername } },
       });
-      if (signUpError) setError(signUpError.message);
+      if (signUpError) {
+        setError(
+          signUpError.message === "Database error saving new user"
+            ? "That username is already taken. Please choose another."
+            : getReadableError(signUpError.message),
+        );
+      }
       else if (data.session && data.user) {
         const { error: profileError } = await supabase.rpc("set_my_username", {
           new_username: cleanUsername,
@@ -113,6 +138,9 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
                 className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
                 placeholder="your_username"
               />
+              <p className="mt-2 text-[11px] text-[#748096]">
+                3-30 characters. Only letters, numbers, and underscores.
+              </p>
             </>
           )}
           <label htmlFor="auth-email" className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
@@ -138,14 +166,23 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
           <input
             id="auth-password"
             required
-            minLength={6}
+            minLength={mode === "signup" ? 8 : undefined}
             type="password"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
-            placeholder="At least 6 characters"
+            placeholder={
+              mode === "signup"
+                ? "At least 8 characters"
+                : "Your password"
+            }
           />
+          {mode === "signup" && (
+            <p className="mt-2 text-[11px] text-[#748096]">
+              Password must be at least 8 characters.
+            </p>
+          )}
           {error && <Alert message={error} className="mt-4" />}
           {message && (
             <Alert message={message} kind="success" className="mt-4" />

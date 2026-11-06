@@ -26,12 +26,12 @@ export function ProfileView({
 
   const saveUsername = async (event: FormEvent) => {
     event.preventDefault();
-    const cleanUsername = newUsername.trim().toLowerCase();
+    const cleanUsername = newUsername.trim();
     setError("");
     setMessage("");
-    if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+    if (!/^[A-Za-z0-9_]{3,30}$/.test(cleanUsername)) {
       setError(
-        "Username must be 3–30 characters using only letters, numbers, and underscores.",
+        "Username must be 3-30 characters using only letters, numbers, and underscores.",
       );
       return;
     }
@@ -75,12 +75,12 @@ export function ProfileView({
     event.preventDefault();
     setError("");
     setMessage("");
-    if (currentPassword.length < 6) {
+    if (currentPassword.length < 1) {
       setError("Enter your current password.");
       return;
     }
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -118,9 +118,6 @@ export function ProfileView({
   return (
     <section className="mx-auto max-w-[700px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
-          Account settings
-        </p>
         <h2 className="text-[32px] font-extrabold tracking-[-0.055em]">
           Your profile.
         </h2>
@@ -151,6 +148,9 @@ export function ProfileView({
               className={inputClass}
             />
           </label>
+          <p className="mt-2 text-[11px] text-[#748096]">
+            3-30 characters; letters, numbers, and underscores only.
+          </p>
           <button
             disabled={saving === "username"}
             className="mt-4 rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
@@ -194,7 +194,7 @@ export function ProfileView({
             Current password
             <input
               required
-              minLength={6}
+              minLength={1}
               type="password"
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
@@ -206,7 +206,7 @@ export function ProfileView({
             New password
             <input
               required
-              minLength={6}
+              minLength={8}
               type="password"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
@@ -218,7 +218,7 @@ export function ProfileView({
             Confirm new password
             <input
               required
-              minLength={6}
+              minLength={8}
               type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
@@ -226,6 +226,9 @@ export function ProfileView({
               autoComplete="new-password"
             />
           </label>
+          <p className="mt-2 text-[11px] text-[#748096]">
+            New passwords must be at least 8 characters.
+          </p>
           <button
             disabled={saving === "password"}
             className="mt-4 rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
@@ -234,12 +237,6 @@ export function ProfileView({
           </button>
         </form>
       </div>
-      <button
-        onClick={onBack}
-        className="mt-6 rounded-xl border border-[#e3e7ed] px-4 py-3 text-xs font-bold text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"
-      >
-        Back to board
-      </button>
     </section>
   );
 }
