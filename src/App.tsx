@@ -30,6 +30,17 @@ type View = "board" | "history" | "profile" | "admin";
 type BoardOption = {
   id: number;
   label: string;
+  difficulty: Difficulty;
+};
+
+type Difficulty = "free" | "common" | "rare";
+
+type BoardComposition = Record<Difficulty, number>;
+
+const DEFAULT_COMPOSITION: BoardComposition = {
+  free: 1,
+  common: 15,
+  rare: 9,
 };
 
 type Lecture = {
@@ -79,8 +90,33 @@ function shuffled<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
-function createBoard(options: BoardOption[]) {
-  return shuffled(options).slice(0, 25);
+function createBoard(
+  options: BoardOption[],
+  composition: BoardComposition = DEFAULT_COMPOSITION,
+) {
+  const selected: BoardOption[] = [];
+  const selectedIds = new Set<number>();
+  const byDifficulty = (difficulty: Difficulty) =>
+    shuffled(options.filter((option) => option.difficulty === difficulty));
+
+  for (const difficulty of ["free", "common", "rare"] as Difficulty[]) {
+    for (const option of byDifficulty(difficulty).slice(
+      0,
+      composition[difficulty],
+    )) {
+      selected.push(option);
+      selectedIds.add(option.id);
+    }
+  }
+
+  if (selected.length < 25) {
+    selected.push(
+      ...shuffled(
+        options.filter((option) => !selectedIds.has(option.id)),
+      ).slice(0, 25 - selected.length),
+    );
+  }
+  return shuffled(selected).slice(0, 25);
 }
 
 function getReadableError(message: string) {
@@ -117,6 +153,8 @@ function App() {
   const [historyReadyFor, setHistoryReadyFor] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [newSuggestion, setNewSuggestion] = useState("");
+  const [composition, setComposition] =
+    useState<BoardComposition>(DEFAULT_COMPOSITION);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const skipHistorySave = useRef(false);
   const historyInteraction = useRef(false);
@@ -152,7 +190,7 @@ function App() {
           supabase.auth.getUser(),
           supabase
             .from("board_options")
-            .select("id, label")
+            .select("id, label, difficulty")
             .order("created_at"),
         ]);
       if (!active) return;
@@ -171,7 +209,7 @@ function App() {
       }
       if (data) {
         setOptions(data);
-        setBoard(createBoard(data));
+        setBoard(createBoard(data, composition));
       }
       const { data: lectures } = await supabase
         .from("lectures")
@@ -179,6 +217,20 @@ function App() {
         .order("starts_at")
         .limit(100);
       setLectures(lectures ?? []);
+      const { data: boardSettings, error: settingsError } = await supabase
+        .from("board_settings")
+        .select("free_count, common_count, rare_count")
+        .eq("id", 1)
+        .maybeSingle();
+      if (settingsError) {
+        setError(settingsError.message);
+      } else if (boardSettings) {
+        setComposition({
+          free: boardSettings.free_count,
+          common: boardSettings.common_count,
+          rare: boardSettings.rare_count,
+        });
+      }
       setAuthResolved(true);
       setLoading(false);
     };
@@ -303,12 +355,12 @@ function App() {
     if (savedBoard) {
       setBoard(JSON.parse(savedBoard));
     } else {
-      const generatedBoard = createBoard(options);
+      const generatedBoard = createBoard(options, composition);
       localStorage.setItem(storageKey, JSON.stringify(generatedBoard));
       setBoard(generatedBoard);
     }
     setMarked([]);
-  }, [activeLecture, upcomingLecture, boardAvailable, options]);
+  }, [activeLecture, upcomingLecture, boardAvailable, options, composition]);
 
   useEffect(() => {
     if (!activeLecture || !board.length) return;
@@ -396,7 +448,7 @@ function App() {
     const { data, error: insertError } = await supabase
       .from("board_options")
       .insert({ label, created_by: user?.id })
-      .select("id, label")
+      .select("id, label, difficulty")
       .single();
     if (insertError) {
       setError(insertError.message);
@@ -422,6 +474,50 @@ function App() {
     setNewSuggestion("");
   };
 
+  const updateDifficulty = async (id: number, difficulty: Difficulty) => {
+    const { error: updateError } = await supabase
+      .from("board_options")
+      .update({ difficulty })
+      .eq("id", id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setOptions((current) =>
+      current.map((option) =>
+        option.id === id ? { ...option, difficulty } : option,
+      ),
+    );
+  };
+
+  const updateComposition = async (next: BoardComposition) => {
+    if (
+      Object.values(next).some((value) => !Number.isInteger(value) || value < 0)
+    ) {
+      setError("Each difficulty count must be a whole number of zero or more.");
+      return;
+    }
+    if (Object.values(next).reduce((total, value) => total + value, 0) !== 25) {
+      setError("Difficulty counts must add up to exactly 25.");
+      return;
+    }
+    const { error: settingsError } = await supabase
+      .from("board_settings")
+      .update({
+        free_count: next.free,
+        common_count: next.common,
+        rare_count: next.rare,
+        updated_by: user?.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+    if (settingsError) {
+      setError(settingsError.message);
+      return;
+    }
+    setComposition(next);
+  };
+
   const reviewSuggestion = async (
     suggestion: Suggestion,
     status: "accepted" | "rejected",
@@ -430,8 +526,12 @@ function App() {
     if (status === "accepted") {
       const { data: option, error: optionError } = await supabase
         .from("board_options")
-        .insert({ label: suggestion.label, created_by: user.id })
-        .select("id, label")
+        .insert({
+          label: suggestion.label,
+          created_by: user.id,
+          difficulty: "common",
+        })
+        .select("id, label, difficulty")
         .single();
       if (optionError) {
         setError(optionError.message);
@@ -816,6 +916,9 @@ function App() {
             uploadLectures={uploadLectures}
             suggestions={suggestions}
             reviewSuggestion={reviewSuggestion}
+            composition={composition}
+            updateComposition={updateComposition}
+            updateDifficulty={updateDifficulty}
           />
         ) : user ? (
           <SuggestionsView
@@ -1646,6 +1749,72 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
+function DifficultySettings({
+  composition,
+  updateComposition,
+}: {
+  composition: BoardComposition;
+  updateComposition: (composition: BoardComposition) => void;
+}) {
+  const [draft, setDraft] = useState(composition);
+
+  useEffect(() => {
+    setDraft(composition);
+  }, [composition]);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+      <div className="mb-4">
+        <h3 className="text-[13px] font-bold">Board difficulty mix</h3>
+        <p className="mt-1 text-[11px] text-[#9aa4b4]">
+          New boards use exactly 25 options with this difficulty split.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {(["free", "common", "rare"] as Difficulty[]).map((difficulty) => (
+          <label
+            key={difficulty}
+            className="text-[11px] font-bold capitalize text-[#59667c]"
+          >
+            {difficulty}
+            <input
+              type="number"
+              min="0"
+              max="25"
+              value={draft[difficulty]}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  [difficulty]: Number(event.target.value),
+                }))
+              }
+              className="mt-2 w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
+            />
+          </label>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-4">
+        <p className="text-[11px] text-[#748096]">
+          Total:{" "}
+          <span className="font-bold">
+            {draft.free + draft.common + draft.rare} / 25
+          </span>
+        </p>
+        <button
+          onClick={() => updateComposition(draft)}
+          disabled={
+            draft.free + draft.common + draft.rare !== 25 ||
+            Object.values(draft).some((value) => value < 0)
+          }
+          className="rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Save difficulty mix
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AdminView({
   options,
   newOption,
@@ -1655,6 +1824,9 @@ function AdminView({
   uploadLectures,
   suggestions,
   reviewSuggestion,
+  composition,
+  updateComposition,
+  updateDifficulty,
 }: {
   options: BoardOption[];
   newOption: string;
@@ -1667,6 +1839,9 @@ function AdminView({
     suggestion: Suggestion,
     status: "accepted" | "rejected",
   ) => void;
+  composition: BoardComposition;
+  updateComposition: (composition: BoardComposition) => void;
+  updateDifficulty: (id: number, difficulty: Difficulty) => void;
 }) {
   const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1740,7 +1915,7 @@ function AdminView({
             <div>
               <h3 className="text-[13px] font-bold">Board options</h3>
               <p className="mt-0.5 text-[11px] text-[#9aa4b4]">
-                The board randomly selects 24 each round.
+                Rank each option and choose the mix used for new boards.
               </p>
             </div>
             <span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">
@@ -1761,6 +1936,21 @@ function AdminView({
                     {option.label}
                   </p>
                 </div>
+                <select
+                  value={option.difficulty}
+                  onChange={(event) =>
+                    updateDifficulty(
+                      option.id,
+                      event.target.value as Difficulty,
+                    )
+                  }
+                  className="rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-2 py-1.5 text-[11px] font-semibold text-[#59667c]"
+                  aria-label={`Difficulty for ${option.label}`}
+                >
+                  <option value="free">Free</option>
+                  <option value="common">Common</option>
+                  <option value="rare">Rare</option>
+                </select>
                 <button
                   aria-label={`Delete ${option.label}`}
                   onClick={() => deleteOption(option.id)}
@@ -1773,6 +1963,10 @@ function AdminView({
           </div>
         </div>
       </div>
+      <DifficultySettings
+        composition={composition}
+        updateComposition={updateComposition}
+      />
       <div className="mt-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
         <h3 className="text-[13px] font-bold">Lecture calendar</h3>
         <p className="mt-1 text-[11px] text-[#9aa4b4]">
