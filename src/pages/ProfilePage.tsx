@@ -8,7 +8,6 @@ export function ProfileView({
   user,
   username,
   onUsernameChanged,
-  onBack,
 }: {
   user: User;
   username: string;
