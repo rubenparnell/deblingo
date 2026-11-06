@@ -1,5 +1,5 @@
-import type { KeyboardEvent } from "react";
-import { ClipboardList, Plus, Trash2 } from "lucide-react";
+import { useState, type KeyboardEvent } from "react";
+import { ChevronDown, ClipboardList, Plus, Trash2 } from "lucide-react";
 import { DifficultySettings } from "../components/DifficultySettings";
 import { SuggestionList } from "../components/SuggestionList";
 import type { BoardComposition, BoardOption, Difficulty, Suggestion } from "../types/app";
@@ -32,6 +32,7 @@ export function AdminView({
   updateComposition: (composition: BoardComposition) => void;
   updateDifficulty: (id: number, difficulty: Difficulty) => void;
 }) {
+  const [boardOptionsExpanded, setBoardOptionsExpanded] = useState(false);
   const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -99,8 +100,13 @@ export function AdminView({
             <Plus size={15} /> Add to board
           </button>
         </div>
-        <div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
-          <div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4">
+        <div className="overflow-hidden rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+          <button
+            type="button"
+            aria-expanded={boardOptionsExpanded}
+            onClick={() => setBoardOptionsExpanded((expanded) => !expanded)}
+            className="flex w-full items-center justify-between px-5 py-4 text-left"
+          >
             <div>
               <h3 className="text-[13px] font-bold">Board options</h3>
               <p className="mt-0.5 text-[11px] text-[#9aa4b4]">
@@ -110,45 +116,62 @@ export function AdminView({
             <span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">
               {options.length} total
             </span>
-          </div>
-          <div className="divide-y divide-[#f0f2f5]">
-            {options.map((option) => (
+            <ChevronDown
+              size={16}
+              className={`ml-3 shrink-0 text-[#8994a6] transition-transform ${boardOptionsExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+          <div
+            inert={!boardOptionsExpanded}
+            className={`relative overflow-hidden transition-[max-height] duration-300 ease-in-out motion-reduce:transition-none ${
+              boardOptionsExpanded ? "max-h-[10000px]" : "max-h-[12.5rem]"
+            }`}
+          >
+            <div className="divide-y divide-[#f0f2f5] border-t border-[#edf0f4]">
+              {options.map((option) => (
+                <div
+                  key={option.id}
+                  className="flex items-center gap-3 px-5 py-3.5"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]">
+                    <ClipboardList size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-semibold text-[#354154]">
+                      {option.label}
+                    </p>
+                  </div>
+                  <select
+                    value={option.difficulty}
+                    onChange={(event) =>
+                      updateDifficulty(
+                        option.id,
+                        event.target.value as Difficulty,
+                      )
+                    }
+                    className="rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-2 py-1.5 text-[11px] font-semibold text-[#59667c]"
+                    aria-label={`Difficulty for ${option.label}`}
+                  >
+                    <option value="free">Free</option>
+                    <option value="common">Common</option>
+                    <option value="rare">Rare</option>
+                  </select>
+                  <button
+                    aria-label={`Delete ${option.label}`}
+                    onClick={() => deleteOption(option.id)}
+                    className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {!boardOptionsExpanded && (
               <div
-                key={option.id}
-                className="flex items-center gap-3 px-5 py-3.5"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]">
-                  <ClipboardList size={14} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-semibold text-[#354154]">
-                    {option.label}
-                  </p>
-                </div>
-                <select
-                  value={option.difficulty}
-                  onChange={(event) =>
-                    updateDifficulty(
-                      option.id,
-                      event.target.value as Difficulty,
-                    )
-                  }
-                  className="rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-2 py-1.5 text-[11px] font-semibold text-[#59667c]"
-                  aria-label={`Difficulty for ${option.label}`}
-                >
-                  <option value="free">Free</option>
-                  <option value="common">Common</option>
-                  <option value="rare">Rare</option>
-                </select>
-                <button
-                  aria-label={`Delete ${option.label}`}
-                  onClick={() => deleteOption(option.id)}
-                  className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
+                aria-hidden="true"
+                className="board-options-fade pointer-events-none absolute inset-x-0 bottom-0 h-24"
+              />
+            )}
           </div>
         </div>
       </div>

@@ -48,6 +48,24 @@ button {
   background-color: #1b2433;
 }
 
+.board-options-fade {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0%),
+    rgb(255 255 255 / 80%),
+    #fff
+  );
+}
+
+.dark-theme .board-options-fade {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(27 36 51 / 0%),
+    rgb(27 36 51 / 80%),
+    #1b2433
+  );
+}
+
 .dark-theme .bg-\[\#fbfcfd\] {
   background-color: #202b3d;
 }
