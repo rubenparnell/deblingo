@@ -159,7 +159,7 @@ $$;
 
 grant execute on function public.set_my_username(text) to authenticated;
 
-insert into public.board_options (label, category)
+insert into public.board_options (label)
 values
   ('Someone says “let’s circle back”'),
   ('A cat walks across the camera'),
