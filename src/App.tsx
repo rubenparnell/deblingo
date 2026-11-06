@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
-type View = "board" | "history" | "admin";
+type View = "board" | "history" | "profile" | "admin";
 
 type BoardOption = {
   id: number;
@@ -83,6 +83,16 @@ function createBoard(options: BoardOption[]) {
   return shuffled(options).slice(0, 25);
 }
 
+function getReadableError(message: string) {
+  if (
+    message.includes("profiles_username_lower_idx") ||
+    message.toLowerCase().includes("duplicate key value")
+  ) {
+    return "That username is already taken. Please choose another.";
+  }
+  return message;
+}
+
 function App() {
   const [view, setView] = useState<View>("board");
   const [options, setOptions] = useState<BoardOption[]>([]);
@@ -107,8 +117,32 @@ function App() {
   const [historyReadyFor, setHistoryReadyFor] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [newSuggestion, setNewSuggestion] = useState("");
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const skipHistorySave = useRef(false);
   const historyInteraction = useRef(false);
+
+  useEffect(() => {
+    if (!showProfile) return;
+
+    const closeOnOutsideInteraction = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowProfile(false);
+      }
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setShowProfile(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideInteraction);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideInteraction);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showProfile]);
 
   useEffect(() => {
     let active = true;
@@ -607,9 +641,11 @@ function App() {
                 ? ""
                 : view === "history"
                   ? "Lecture history"
-                  : isAdmin
-                    ? "Manage board options"
-                    : "Suggest board options"}
+                  : view === "profile"
+                    ? "Profile"
+                    : isAdmin
+                      ? "Manage board options"
+                      : "Suggest board options"}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -641,7 +677,7 @@ function App() {
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
             {user ? (
-              <div className="relative">
+              <div ref={profileMenuRef} className="relative">
                 <button
                   onClick={() => setShowProfile(!showProfile)}
                   className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5"
@@ -653,7 +689,13 @@ function App() {
                 </button>
                 {showProfile && (
                   <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl">
-                    <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]">
+                    <button
+                      onClick={() => {
+                        setShowProfile(false);
+                        setView("profile");
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]"
+                    >
                       Profile
                     </button>
                     <button
@@ -678,11 +720,7 @@ function App() {
           </div>
         </header>
 
-        {error && (
-          <div className="mx-auto mt-5 max-w-[1120px] rounded-xl border border-[#f1caca] bg-[#fff5f5] px-4 py-3 text-xs text-[#b34e4e]">
-            {error}
-          </div>
-        )}
+        {error && <Alert message={error} onDismiss={() => setError("")} />}
         {view === "board" ? (
           <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
             {!boardAvailable && nextLecture && (
@@ -761,6 +799,13 @@ function App() {
           </section>
         ) : view === "history" ? (
           <HistoryView history={history} />
+        ) : view === "profile" && user ? (
+          <ProfileView
+            user={user}
+            username={username}
+            onUsernameChanged={setUsername}
+            onBack={() => setView("board")}
+          />
         ) : isAdmin ? (
           <AdminView
             options={options}
@@ -926,7 +971,7 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
         const { error: profileError } = await supabase.rpc("set_my_username", {
           new_username: cleanUsername,
         });
-        if (profileError) setError(profileError.message);
+        if (profileError) setError(getReadableError(profileError.message));
         else onSignedIn(data.user);
       } else
         setMessage(
@@ -1048,15 +1093,9 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
             className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
             placeholder="At least 6 characters"
           />
-          {error && (
-            <p className="mt-4 rounded-lg bg-[#fff5f5] p-3 text-xs text-[#b34e4e]">
-              {error}
-            </p>
-          )}
+          {error && <Alert message={error} className="mt-4" />}
           {message && (
-            <p className="mt-4 rounded-lg bg-[#effaf5] p-3 text-xs text-[#237a56]">
-              {message}
-            </p>
+            <Alert message={message} kind="success" className="mt-4" />
           )}
           <button
             disabled={submitting}
@@ -1070,6 +1109,52 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
           </button>
         </form>
       </div>
+    </div>
+  );
+}
+
+function Alert({
+  message,
+  kind = "error",
+  onDismiss,
+  className = "",
+}: {
+  message: string;
+  kind?: "error" | "success";
+  onDismiss?: () => void;
+  className?: string;
+}) {
+  const isError = kind === "error";
+  return (
+    <div
+      role={isError ? "alert" : "status"}
+      aria-live="polite"
+      className={`mx-auto flex max-w-[1120px] items-start gap-3 rounded-xl border px-4 py-3 text-xs shadow-sm ${
+        isError
+          ? "border-[#f1caca] bg-[#fff5f5] text-[#9f3f46]"
+          : "border-[#ccebdc] bg-[#effaf5] text-[#237a56]"
+      } ${className}`}
+    >
+      <span
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
+          isError
+            ? "bg-[#f8d9dc] text-[#9f3f46]"
+            : "bg-[#ccebdc] text-[#237a56]"
+        }`}
+      >
+        {isError ? "!" : "✓"}
+      </span>
+      <p className="min-w-0 flex-1 whitespace-pre-wrap leading-5">{message}</p>
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label="Dismiss message"
+          onClick={onDismiss}
+          className="rounded-md p-1 opacity-70 transition hover:bg-black/5 hover:opacity-100"
+        >
+          <X size={14} />
+        </button>
+      )}
     </div>
   );
 }
@@ -1122,6 +1207,246 @@ function SuggestionsView({
         </button>
       </div>
       <SuggestionList suggestions={suggestions} />
+    </section>
+  );
+}
+
+function ProfileView({
+  user,
+  username,
+  onUsernameChanged,
+  onBack,
+}: {
+  user: User;
+  username: string;
+  onUsernameChanged: (value: string) => void;
+  onBack: () => void;
+}) {
+  const [newUsername, setNewUsername] = useState(username);
+  const [newEmail, setNewEmail] = useState(user.email ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState("");
+
+  const saveUsername = async (event: FormEvent) => {
+    event.preventDefault();
+    const cleanUsername = newUsername.trim().toLowerCase();
+    setError("");
+    setMessage("");
+    if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+      setError(
+        "Username must be 3–30 characters using only letters, numbers, and underscores.",
+      );
+      return;
+    }
+    setSaving("username");
+    const { error: usernameError } = await supabase.rpc("set_my_username", {
+      new_username: cleanUsername,
+    });
+    setSaving("");
+    if (usernameError) {
+      setError(getReadableError(usernameError.message));
+      return;
+    }
+    onUsernameChanged(cleanUsername);
+    setNewUsername(cleanUsername);
+    setMessage("Username updated.");
+  };
+
+  const saveEmail = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    if (!newEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    setSaving("email");
+    const { error: emailError } = await supabase.auth.updateUser({
+      email: newEmail.trim(),
+    });
+    setSaving("");
+    if (emailError) {
+      setError(emailError.message);
+      return;
+    }
+    setMessage(
+      "Email update requested. Check your email to confirm the new address.",
+    );
+  };
+
+  const savePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    if (currentPassword.length < 6) {
+      setError("Enter your current password.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setSaving("password");
+    const { error: currentPasswordError } =
+      await supabase.auth.signInWithPassword({
+        email: user.email ?? "",
+        password: currentPassword,
+      });
+    if (currentPasswordError) {
+      setSaving("");
+      setError("The current password is incorrect.");
+      return;
+    }
+    const { error: passwordError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setSaving("");
+    if (passwordError) {
+      setError(passwordError.message);
+      return;
+    }
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setMessage("Password updated.");
+  };
+
+  const inputClass =
+    "mt-2 w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]";
+
+  return (
+    <section className="mx-auto max-w-[700px] px-5 py-8 sm:px-10 lg:px-14">
+      <div className="mb-8">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
+          Account settings
+        </p>
+        <h2 className="text-[32px] font-extrabold tracking-[-0.055em]">
+          Your profile.
+        </h2>
+        <p className="mt-2 text-[13px] text-[#748096]">
+          Update your account details and sign-in credentials.
+        </p>
+      </div>
+      {(error || message) && (
+        <Alert
+          message={error || message}
+          kind={error ? "error" : "success"}
+          className="mb-6"
+        />
+      )}
+      <div className="space-y-6">
+        <form
+          onSubmit={saveUsername}
+          className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"
+        >
+          <h3 className="text-[13px] font-bold">Username</h3>
+          <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
+            Username
+            <input
+              required
+              pattern="[A-Za-z0-9_]{3,30}"
+              value={newUsername}
+              onChange={(event) => setNewUsername(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <button
+            disabled={saving === "username"}
+            className="mt-4 rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
+          >
+            {saving === "username" ? "Saving…" : "Update username"}
+          </button>
+        </form>
+
+        <form
+          onSubmit={saveEmail}
+          className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"
+        >
+          <h3 className="text-[13px] font-bold">Email address</h3>
+          <p className="mt-1 text-[11px] text-[#9aa4b4]">
+            Supabase may require confirmation at both the old and new address.
+          </p>
+          <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
+            Email
+            <input
+              required
+              type="email"
+              value={newEmail}
+              onChange={(event) => setNewEmail(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <button
+            disabled={saving === "email"}
+            className="mt-4 rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
+          >
+            {saving === "email" ? "Saving…" : "Update email"}
+          </button>
+        </form>
+
+        <form
+          onSubmit={savePassword}
+          className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"
+        >
+          <h3 className="text-[13px] font-bold">Password</h3>
+          <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
+            Current password
+            <input
+              required
+              minLength={6}
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className={inputClass}
+              autoComplete="current-password"
+            />
+          </label>
+          <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
+            New password
+            <input
+              required
+              minLength={6}
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className={inputClass}
+              autoComplete="new-password"
+            />
+          </label>
+          <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
+            Confirm new password
+            <input
+              required
+              minLength={6}
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className={inputClass}
+              autoComplete="new-password"
+            />
+          </label>
+          <button
+            disabled={saving === "password"}
+            className="mt-4 rounded-xl bg-[#2144d3] px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
+          >
+            {saving === "password" ? "Saving…" : "Update password"}
+          </button>
+        </form>
+      </div>
+      <button
+        onClick={onBack}
+        className="mt-6 rounded-xl border border-[#e3e7ed] px-4 py-3 text-xs font-bold text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"
+      >
+        Back to board
+      </button>
     </section>
   );
 }
