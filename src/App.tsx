@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useRef,
   useState,
@@ -71,6 +72,8 @@ type LeaderboardEntry = {
   username: string;
   completed_lines: number;
   marked_squares: number;
+  board: BoardOption[];
+  marked_ids: number[];
 };
 
 type Suggestion = {
@@ -1078,6 +1081,9 @@ function LeaderboardPage({ onError }: { onError: (message: string) => void }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSourceUid, setSelectedSourceUid] = useState("");
+  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     let active = true;
@@ -1180,7 +1186,7 @@ function LeaderboardPage({ onError }: { onError: (message: string) => void }) {
                     Rank
                   </th>
                   <th scope="col" className="px-5 py-4 font-bold">
-                    Username
+                    Player
                   </th>
                   <th scope="col" className="px-5 py-4 text-right font-bold">
                     Lines
@@ -1191,25 +1197,78 @@ function LeaderboardPage({ onError }: { onError: (message: string) => void }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e7eaf0]">
-                {selectedEntries.map((entry, index) => (
-                  <tr key={entry.username} className="text-[#354154]">
-                    <td className="px-5 py-4 font-bold text-[#8994a6]">
-                      {index + 1}
-                    </td>
-                    <th
-                      scope="row"
-                      className="px-5 py-4 font-bold text-[#182230]"
-                    >
-                      {entry.username}
-                    </th>
-                    <td className="px-5 py-4 text-right font-extrabold text-[#2144d3]">
-                      {entry.completed_lines}
-                    </td>
-                    <td className="px-5 py-4 text-right font-semibold">
-                      {entry.marked_squares}
-                    </td>
-                  </tr>
-                ))}
+                {selectedEntries.map((entry, index) => {
+                  const playerKey = `${entry.source_uid}-${entry.username}`;
+                  const isExpanded = expandedPlayers.has(playerKey);
+                  return (
+                    <Fragment key={playerKey}>
+                      <tr className="text-[#354154]">
+                        <td className="px-5 py-4 font-bold text-[#8994a6]">
+                          {index + 1}
+                        </td>
+                        <th
+                          scope="row"
+                          className="px-5 py-4 font-bold text-[#182230]"
+                        >
+                          <button
+                            type="button"
+                            aria-expanded={isExpanded}
+                            aria-label={`${isExpanded ? "Hide" : "Show"} ${entry.username}'s board`}
+                            onClick={() =>
+                              setExpandedPlayers((current) => {
+                                const next = new Set(current);
+                                if (next.has(playerKey)) next.delete(playerKey);
+                                else next.add(playerKey);
+                                return next;
+                              })
+                            }
+                            className="flex items-center gap-2 text-left hover:text-[#2144d3]"
+                          >
+                            {entry.username}
+                            <ChevronDown
+                              size={14}
+                              className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        </th>
+                        <td className="px-5 py-4 text-right font-extrabold text-[#2144d3]">
+                          {entry.completed_lines}
+                        </td>
+                        <td className="px-5 py-4 text-right font-semibold">
+                          {entry.marked_squares}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={4} className="bg-[#f7f8fb] px-5 py-5">
+                            <p className="mb-3 text-xs font-bold text-[#59667c]">
+                              {entry.username}&apos;s board
+                            </p>
+                            <div className="grid max-w-2xl grid-cols-5 gap-2">
+                              {entry.board.map((option, boardIndex) => {
+                                const isMarked = entry.marked_ids.includes(
+                                  option.id,
+                                );
+                                return (
+                                  <div
+                                    key={`${playerKey}-${option.id}-${boardIndex}`}
+                                    className={`flex min-h-[58px] items-center justify-center rounded-xl border p-2 text-center text-[10px] font-bold leading-[1.35] sm:min-h-[72px] sm:text-[11px] ${
+                                      isMarked
+                                        ? "border-[#2144d3] bg-[#2144d3] text-white"
+                                        : "border-[#e5e9ef] bg-white text-[#354154]"
+                                    }`}
+                                  >
+                                    {option.label}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

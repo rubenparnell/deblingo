@@ -56,7 +56,9 @@ returns table (
   starts_at timestamptz,
   username text,
   completed_lines integer,
-  marked_squares integer
+  marked_squares integer,
+  board jsonb,
+  marked_ids bigint[]
 )
 language sql
 security definer
@@ -69,7 +71,9 @@ as $$
     history.starts_at,
     profile.username,
     history.completed_lines,
-    history.score
+    history.score,
+    history.board,
+    history.marked_ids
   from public.lecture_history as history
   join public.profiles as profile on profile.id = history.user_id
   where profile.username is not null;
