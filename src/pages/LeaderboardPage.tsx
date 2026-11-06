@@ -101,7 +101,7 @@ export function LeaderboardPage({
   };
 
   return (
-    <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
+    <section className="mx-auto max-w-[1050px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
           Top players
@@ -147,24 +147,24 @@ export function LeaderboardPage({
         <div className="overflow-hidden rounded-2xl border border-[#e6e9ef] bg-white shadow-[0_15px_40px_rgba(38,51,77,0.06)]">
           <div className="overflow-x-auto">
             <table
-              className={`w-full ${isAdmin ? "min-w-[560px]" : "min-w-[480px]"} text-left text-sm`}
+              className={`w-full table-fixed text-left text-sm ${isAdmin ? "sm:min-w-[560px]" : "sm:min-w-[480px]"}`}
             >
               <thead className="bg-[#f7f8fb] text-[10px] uppercase tracking-wider text-[#8994a6]">
                 <tr>
-                  <th scope="col" className="px-5 py-4 font-bold">
+                  <th scope="col" className="w-[12%] px-2 py-3 font-bold sm:w-auto sm:px-5 sm:py-4">
                     Rank
                   </th>
-                  <th scope="col" className="px-5 py-4 font-bold">
+                  <th scope="col" className="w-[40%] px-2 py-3 font-bold sm:w-auto sm:px-5 sm:py-4">
                     Player
                   </th>
-                  <th scope="col" className="px-5 py-4 text-right font-bold">
+                  <th scope="col" className="w-[16%] px-2 py-3 text-right font-bold sm:w-auto sm:px-5 sm:py-4">
                     Lines
                   </th>
-                  <th scope="col" className="px-5 py-4 text-right font-bold">
+                  <th scope="col" className="w-[18%] px-2 py-3 text-right font-bold sm:w-auto sm:px-5 sm:py-4">
                     Squares
                   </th>
                   {isAdmin && (
-                    <th scope="col" className="px-5 py-4">
+                    <th scope="col" className="w-[14%] px-2 py-3 sm:w-auto sm:px-5 sm:py-4">
                       <span className="sr-only">Admin actions</span>
                     </th>
                   )}
@@ -177,12 +177,12 @@ export function LeaderboardPage({
                   return (
                     <Fragment key={playerKey}>
                       <tr className="text-[#354154]">
-                        <td className="px-5 py-4 font-bold text-[#8994a6]">
+                        <td className="whitespace-nowrap px-2 py-3 font-bold text-[#8994a6] sm:px-5 sm:py-4">
                           {index + 1}
                         </td>
                         <th
                           scope="row"
-                          className="px-5 py-4 font-bold text-[#182230]"
+                          className="min-w-0 px-2 py-3 font-bold text-[#182230] sm:px-5 sm:py-4"
                         >
                           <button
                             type="button"
@@ -196,23 +196,23 @@ export function LeaderboardPage({
                                 return next;
                               })
                             }
-                            className="flex items-center gap-2 text-left hover:text-[#2144d3]"
+                            className="flex min-h-11 min-w-0 items-center gap-1 text-left hover:text-[#2144d3] sm:gap-2"
                           >
-                            {entry.username}
+                            <span className="truncate">{entry.username}</span>
                             <ChevronDown
                               size={14}
                               className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
                             />
                           </button>
                         </th>
-                        <td className="px-5 py-4 text-right font-extrabold text-[#2144d3]">
+                        <td className="whitespace-nowrap px-2 py-3 text-right font-extrabold text-[#2144d3] sm:px-5 sm:py-4">
                           {entry.completed_lines}
                         </td>
-                        <td className="px-5 py-4 text-right font-semibold">
+                        <td className="whitespace-nowrap px-2 py-3 text-right font-semibold sm:px-5 sm:py-4">
                           {entry.marked_squares}
                         </td>
                         {isAdmin && (
-                          <td className="px-5 py-3 text-right">
+                          <td className="px-1 py-2 text-right sm:px-5 sm:py-3">
                             <button
                               type="button"
                               aria-label={`Remove ${entry.username} from this lecture's leaderboard`}

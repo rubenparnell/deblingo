@@ -46,7 +46,7 @@ export function CountdownCard({
         <span className="text-[10px] font-bold uppercase tracking-wider text-white/75">
           {countdownLabel}
         </span>
-        <span className="text-xs font-extrabold text-white">
+        <span className="font-mono text-xs font-extrabold tabular-nums text-white">
           {days}d {String(hours).padStart(2, "0")}h{" "}
           {String(minutes).padStart(2, "0")}m {String(seconds).padStart(2, "0")}
           s
@@ -99,7 +99,7 @@ export function CountdownCard({
           {target.toLocaleString()}
         </p>
       </div>
-      <div className="flex items-baseline gap-1 text-[#2144d3]">
+      <div className="flex items-baseline gap-1 font-mono tabular-nums text-[#2144d3]">
         <span className="text-2xl font-extrabold">{days}d</span>
         <span className="text-2xl font-extrabold">
           {String(hours).padStart(2, "0")}h
@@ -118,7 +118,7 @@ export function CountdownCard({
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="min-w-[62px] rounded-2xl bg-white/15 px-3 py-3 sm:min-w-[100px] sm:px-5 sm:py-4">
-      <p className="text-3xl font-extrabold tracking-[-0.05em] text-white sm:text-5xl">
+      <p className="font-mono text-3xl font-extrabold tabular-nums text-white sm:text-5xl">
         {String(value).padStart(2, "0")}
       </p>
       <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/70 sm:text-[10px]">

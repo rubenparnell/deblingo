@@ -8,7 +8,6 @@ import {
   History as HistoryIcon,
   LayoutDashboard,
   LogIn,
-  LogOut,
   Moon,
   Plus,
   RotateCcw,
@@ -583,161 +582,140 @@ function App() {
     <div
       className={`min-h-screen bg-[#f7f8fb] text-[#182230] ${darkMode ? "dark-theme" : ""}`}
     >
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[252px] flex-col border-r border-[#e7eaf0] bg-white lg:flex">
-        <div className="flex h-[88px] items-center gap-3 border-b border-[#e7eaf0] px-7">
-          <img id="logo" src="/src/assets/icon.png" />
-          <div>
-            <p className="text-[17px] font-bold tracking-[-0.03em]">deblingo</p>
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col px-4 py-7">
-          <SidebarItem
-            icon={<LayoutDashboard size={17} />}
-            label="Board"
-            active={view === "board"}
-            onClick={() => setView("board")}
-          />
-          <SidebarItem
-            icon={<HistoryIcon size={17} />}
-            label="History"
-            active={view === "history"}
-            onClick={() => setView("history")}
-          />
-          <SidebarItem
-            icon={<Trophy size={17} />}
-            label="Leaderboard"
-            active={view === "leaderboard"}
-            onClick={() => setView("leaderboard")}
-          />
-          {user && !isAdmin && (
-            <SidebarItem
-              icon={<Plus size={17} />}
-              label="Suggest options"
-              active={view === "admin"}
-              onClick={() => setView("admin")}
-            />
-          )}
-          {isAdmin && (
-            <SidebarItem
-              icon={<ClipboardList size={17} />}
-              label="Manage options"
-              active={view === "admin"}
-              onClick={() => setView("admin")}
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-3 border-t border-[#e7eaf0] px-6 py-5">
-          <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${user ? "bg-[#f5b69d] text-[#7b3e31]" : "bg-[#eef2ff] text-[#2144d3]"}`}
-          >
-            {user ? username.slice(0, 2).toUpperCase() : "G"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-bold">
-              {user ? username : "Playing as guest"}
-            </p>
-            <p className="text-[10px] text-[#98a2b3]">
-              {user ? (isAdmin ? "Admin" : "Member") : "No login needed"}
-            </p>
-          </div>
-          {user && (
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-[#2144d3] focus:shadow-lg"
+      >
+        Skip to content
+      </a>
+      <main id="main-content" className="min-h-screen">
+        <header className="sticky top-0 z-20 border-b border-[#e7eaf0] bg-white">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 lg:px-10">
             <button
-              aria-label="Log out"
-              onClick={() => supabase.auth.signOut()}
-              className="text-[#a8b0bf]"
+              type="button"
+              onClick={() => setView("board")}
+              aria-label="Deblingo home"
+              className="flex shrink-0 items-center gap-2.5"
             >
-              <LogOut size={15} />
+              <img
+                id="logo"
+                src="/src/assets/icon.png"
+                alt=""
+                className="!h-9 !w-9"
+              />
+              <span className="text-[17px] font-bold tracking-[-0.03em]">
+                deblingo
+              </span>
             </button>
-          )}
-        </div>
-      </aside>
-
-      <main className="min-h-screen lg:ml-[252px]">
-        <header className="flex h-[88px] items-center justify-between border-b border-[#e7eaf0] bg-white px-6 sm:px-10">
-          <div>
-            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.04em]">
-              {view === "board"
-                ? ""
-                : view === "history"
-                  ? "Lecture history"
-                  : view === "leaderboard"
-                    ? "Leaderboard"
-                    : view === "profile"
-                      ? "Profile"
-                      : isAdmin
-                        ? "Manage board options"
-                        : "Suggest board options"}
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {nextLecture && !adminMode && (
-              <CountdownCard event={nextLecture} now={clock} compact />
-            )}
-            {isAdmin && view === "board" && (
-              <button
-                onClick={() => {
-                  setAdminMode((current) => {
-                    if (current) skipHistorySave.current = true;
-                    return !current;
-                  });
-                  historyInteraction.current = false;
-                  setMarked([]);
-                }}
-                className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${adminMode ? "bg-[#32c184] text-white" : "border border-[#e3e7ed] text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"}`}
-              >
-                {adminMode ? "Exit admin mode" : "Admin mode"}
-              </button>
-            )}
-            <button
-              aria-label={
-                darkMode ? "Switch to light mode" : "Switch to dark mode"
-              }
-              onClick={() => setDarkMode((current) => !current)}
-              className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]"
+            <nav
+              aria-label="Main navigation"
+              className="order-3 -mx-4 flex w-[calc(100%+2rem)] min-w-0 flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain px-4 touch-pan-x sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-2 lg:mx-0 lg:w-auto lg:flex-1 lg:justify-start lg:overflow-x-visible lg:px-0"
             >
-              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            {user ? (
-              <div ref={profileMenuRef} className="relative">
+              <SidebarItem
+                icon={<LayoutDashboard size={16} />}
+                label="Board"
+                active={view === "board"}
+                onClick={() => setView("board")}
+              />
+              <SidebarItem
+                icon={<HistoryIcon size={16} />}
+                label="History"
+                active={view === "history"}
+                onClick={() => setView("history")}
+              />
+              <SidebarItem
+                icon={<Trophy size={16} />}
+                label="Leaderboard"
+                active={view === "leaderboard"}
+                onClick={() => setView("leaderboard")}
+              />
+              {user && !isAdmin && (
+                <SidebarItem
+                  icon={<Plus size={16} />}
+                  label="Suggest options"
+                  active={view === "admin"}
+                  onClick={() => setView("admin")}
+                />
+              )}
+              {isAdmin && (
+                <SidebarItem
+                  icon={<ClipboardList size={16} />}
+                  label="Manage options"
+                  active={view === "admin"}
+                  onClick={() => setView("admin")}
+                />
+              )}
+            </nav>
+            <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:gap-3 lg:order-3 lg:ml-0">
+              {nextLecture && !adminMode && (
+                <CountdownCard event={nextLecture} now={clock} compact />
+              )}
+              {isAdmin && view === "board" && (
                 <button
-                  onClick={() => setShowProfile(!showProfile)}
-                  className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5"
+                  onClick={() => {
+                    setAdminMode((current) => {
+                      if (current) skipHistorySave.current = true;
+                      return !current;
+                    });
+                    historyInteraction.current = false;
+                    setMarked([]);
+                  }}
+                  className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${adminMode ? "bg-[#32c184] text-white" : "border border-[#e3e7ed] text-[#647086] hover:border-[#2144d3] hover:text-[#2144d3]"}`}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">
-                    {username.slice(0, 2).toUpperCase()}
-                  </span>
-                  <ChevronDown size={14} className="text-[#8993a5]" />
+                  {adminMode ? "Exit admin mode" : "Admin mode"}
                 </button>
-                {showProfile && (
-                  <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl">
-                    <button
-                      onClick={() => {
-                        setShowProfile(false);
-                        setView("profile");
-                      }}
-                      className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]"
-                    >
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => supabase.auth.signOut()}
-                      className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
+              )}
               <button
-                aria-label="Guest mode. Click to sign in or create an account"
-                onClick={() => setView("admin")}
-                className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-3.5 py-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_rgba(33,68,211,0.18)] transition hover:bg-[#1738bd]"
+                aria-label={
+                  darkMode ? "Switch to light mode" : "Switch to dark mode"
+                }
+                onClick={() => setDarkMode((current) => !current)}
+                className="rounded-xl border border-[#e3e7ed] p-2 text-[#647086] transition hover:text-[#2144d3]"
               >
-                <LogIn size={14} />
-                Sign in
+                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
               </button>
-            )}
+              {user ? (
+                <div ref={profileMenuRef} className="relative">
+                  <button
+                    onClick={() => setShowProfile(!showProfile)}
+                    className="flex items-center gap-2 rounded-xl border border-[#e3e7ed] p-1.5 pr-2.5"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5b69d] text-[10px] font-bold text-[#7b3e31]">
+                      {username.slice(0, 2).toUpperCase()}
+                    </span>
+                    <ChevronDown size={14} className="text-[#8993a5]" />
+                  </button>
+                  {showProfile && (
+                    <div className="absolute right-0 top-12 z-30 w-40 rounded-xl border border-[#e7eaf0] bg-white p-2 text-xs shadow-xl">
+                      <button
+                        onClick={() => {
+                          setShowProfile(false);
+                          setView("profile");
+                        }}
+                        className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]"
+                      >
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => supabase.auth.signOut()}
+                        className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#f5f7fb]"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  aria-label="Guest mode. Click to sign in or create an account"
+                  onClick={() => setView("admin")}
+                  className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-3.5 py-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_rgba(33,68,211,0.18)] transition hover:bg-[#1738bd]"
+                >
+                  <LogIn size={14} />
+                  Sign in
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
@@ -752,7 +730,7 @@ function App() {
               <CountdownCard event={nextLecture} now={clock} emptyState />
             )}
             {boardAvailable && (
-              <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+              <div className="mb-8 flex flex-col justify-between gap-4 sm:gap-5 md:flex-row md:items-end">
                 <div>
                   <h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">
                     <span className="text-[#2144d3]">deblingo.</span>
@@ -762,7 +740,7 @@ function App() {
                     call <em className="italic">deblingo</em>!
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <div className="rounded-xl border border-[#e3e7ed] bg-white px-4 py-2.5 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#9ba4b5]">
                       Marked
@@ -791,28 +769,29 @@ function App() {
               </div>
             )}
             {boardAvailable && (
-              <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-3 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
+              <div className="rounded-[22px] border border-[#e6e9ef] bg-white p-2.5 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-5">
                 <div className="mb-4 flex items-center justify-between px-1 sm:px-2">
                   <button
                     onClick={() => {
                       historyInteraction.current = true;
                       setMarked([]);
                     }}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#8994a6] hover:text-[#2144d3]"
+                    className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-[#8994a6] hover:text-[#2144d3]"
                   >
                     <RotateCcw size={13} /> Clear marks
                   </button>
                 </div>
-                <div className="grid grid-cols-5 gap-2 sm:gap-3">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
                   {board.map((option, index) => {
                     const isMarked = marked.includes(option.id);
                     return (
                       <button
                         key={`${option.id}-${index}`}
                         onClick={() => toggleMark(option.id)}
-                        className={`group relative flex min-h-[92px] flex-col items-center justify-center rounded-[13px] border p-2 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? "border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]" : "border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]"}`}
+                        aria-pressed={isMarked}
+                        className={`group relative flex min-h-[68px] flex-col items-center justify-center rounded-[13px] border p-1.5 text-center transition sm:min-h-[119px] sm:p-4 ${isMarked ? "border-[#2144d3] bg-[#2144d3] text-white shadow-[0_7px_15px_rgba(33,68,211,0.2)]" : "border-[#e5e9ef] bg-[#fbfcfd] text-[#354154] hover:-translate-y-0.5 hover:border-[#aebcf4] hover:bg-[#f5f7ff]"}`}
                       >
-                        <span className="text-[10px] font-bold leading-[1.35] sm:text-[12px]">
+                        <span className="text-[10px] font-bold leading-[1.25] sm:text-[12px] sm:leading-[1.35]">
                           {option.label}
                         </span>
                         {isMarked && (

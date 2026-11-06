@@ -70,8 +70,8 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f8fb] px-5">
-      <div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-8 shadow-[0_20px_60px_rgba(38,51,77,0.08)]">
+    <div className="flex min-h-dvh items-center justify-center bg-[#f7f8fb] px-4 py-5 sm:px-5">
+      <div className="w-full max-w-[410px] rounded-3xl border border-[#e5e9ef] bg-white p-5 shadow-[0_20px_60px_rgba(38,51,77,0.08)] sm:p-8">
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2144d3] text-lg font-extrabold text-white">
             D
@@ -115,13 +115,15 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
         <form onSubmit={submit} className="mt-7">
           {mode === "signup" && (
             <>
-              <label className="mb-2 block text-xs font-bold text-[#59667c]">
+              <label htmlFor="signup-username" className="mb-2 block text-xs font-bold text-[#59667c]">
                 Username
               </label>
               <input
+                id="signup-username"
                 required
                 type="text"
                 pattern="[A-Za-z0-9_]{3,30}"
+                autoComplete="username"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
@@ -129,10 +131,11 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
               />
             </>
           )}
-          <label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
+          <label htmlFor="auth-email" className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
             {mode === "signin" ? "Username or email" : "Email"}
           </label>
           <input
+            id="auth-email"
             required
             type={mode === "signin" ? "text" : "email"}
             autoComplete={mode === "signin" ? "username" : "email"}
@@ -145,13 +148,15 @@ export function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
                 : "you@company.com"
             }
           />
-          <label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
+          <label htmlFor="auth-password" className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
             Password
           </label>
           <input
+            id="auth-password"
             required
             minLength={6}
             type="password"
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"

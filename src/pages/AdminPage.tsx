@@ -40,7 +40,7 @@ export function AdminView({
     }
   };
   return (
-    <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
+    <section className="mx-auto max-w-[1050px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
@@ -69,7 +69,7 @@ export function AdminView({
         reviewSuggestion={reviewSuggestion}
       />
       <div className="mt-6 grid gap-6 lg:grid-cols-[350px_1fr]">
-        <div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+        <div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-4 shadow-[0_10px_30px_rgba(38,51,77,0.04)] sm:p-5">
           <div className="mb-5 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]">
               <Plus size={16} />
@@ -81,10 +81,11 @@ export function AdminView({
               </p>
             </div>
           </div>
-          <label className="mb-2 block text-[11px] font-bold text-[#59667c]">
+          <label htmlFor="new-board-option" className="mb-2 block text-[11px] font-bold text-[#59667c]">
             Prompt
           </label>
           <textarea
+            id="new-board-option"
             value={newOption}
             onChange={(event) => setNewOption(event.target.value)}
             onKeyDown={submitOnEnter}
@@ -131,7 +132,7 @@ export function AdminView({
               {options.map((option) => (
                 <div
                   key={option.id}
-                  className="flex items-center gap-3 px-5 py-3.5"
+                  className="flex items-center gap-2 px-3 py-3.5 sm:gap-3 sm:px-5"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]">
                     <ClipboardList size={14} />
@@ -149,7 +150,7 @@ export function AdminView({
                         event.target.value as Difficulty,
                       )
                     }
-                    className="rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-2 py-1.5 text-[11px] font-semibold text-[#59667c]"
+                    className="max-w-[92px] rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-1.5 py-1.5 text-[11px] font-semibold text-[#59667c] sm:max-w-none sm:px-2"
                     aria-label={`Difficulty for ${option.label}`}
                   >
                     <option value="free">Free</option>
@@ -159,7 +160,7 @@ export function AdminView({
                   <button
                     aria-label={`Delete ${option.label}`}
                     onClick={() => deleteOption(option.id)}
-                    className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"
+                    className="shrink-0 rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"
                   >
                     <Trash2 size={15} />
                   </button>

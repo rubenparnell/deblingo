@@ -116,7 +116,7 @@ export function ProfileView({
     "mt-2 w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]";
 
   return (
-    <section className="mx-auto max-w-[700px] px-5 py-8 sm:px-10 lg:px-14">
+    <section className="mx-auto max-w-[700px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
           Account settings
@@ -138,7 +138,7 @@ export function ProfileView({
       <div className="space-y-6">
         <form
           onSubmit={saveUsername}
-          className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]"
+          className="rounded-2xl border border-[#e4e8ef] bg-white p-4 shadow-[0_10px_30px_rgba(38,51,77,0.04)] sm:p-5"
         >
           <h3 className="text-[13px] font-bold">Username</h3>
           <label className="mt-4 block text-[11px] font-bold text-[#59667c]">
@@ -243,4 +243,3 @@ export function ProfileView({
     </section>
   );
 }
-

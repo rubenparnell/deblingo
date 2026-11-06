@@ -14,7 +14,7 @@ export function SuggestionsView({
   addSuggestion: () => void;
 }) {
   return (
-    <section className="mx-auto max-w-[700px] px-5 py-12 sm:px-10 lg:px-14">
+    <section className="mx-auto max-w-[700px] px-4 py-8 sm:px-10 sm:py-12 lg:px-14">
       <div className="mb-8">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
           Community ideas
@@ -26,8 +26,15 @@ export function SuggestionsView({
           Suggest a prompt for an admin to review and add to future boards.
         </p>
       </div>
-      <div className="rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+      <div className="rounded-2xl border border-[#e4e8ef] bg-white p-4 shadow-[0_10px_30px_rgba(38,51,77,0.04)] sm:p-5">
+        <label
+          htmlFor="new-suggestion"
+          className="mb-2 block text-[11px] font-bold text-[#59667c]"
+        >
+          Suggestion
+        </label>
         <textarea
+          id="new-suggestion"
           value={newSuggestion}
           onChange={(event) => setNewSuggestion(event.target.value)}
           onKeyDown={(event) => {
@@ -53,4 +60,3 @@ export function SuggestionsView({
     </section>
   );
 }
-

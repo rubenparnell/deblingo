@@ -5,7 +5,7 @@ import type { HistoryEntry } from "../types/app";
 export function HistoryView({ history }: { history: HistoryEntry[] }) {
   if (!history.length) {
     return (
-      <section className="mx-auto max-w-[1050px] px-5 py-12 sm:px-10 lg:px-14">
+      <section className="mx-auto max-w-[1050px] px-4 py-8 sm:px-10 sm:py-12 lg:px-14">
         <div className="rounded-2xl border border-[#e4e8ef] bg-white p-10 text-center">
           <HistoryIcon className="mx-auto text-[#2144d3]" size={28} />
           <h2 className="mt-4 text-xl font-extrabold">
@@ -20,7 +20,7 @@ export function HistoryView({ history }: { history: HistoryEntry[] }) {
   }
 
   return (
-    <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
+    <section className="mx-auto max-w-[1050px] px-4 py-6 sm:px-10 sm:py-8 lg:px-14">
       <div className="mb-8">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
           Your games
@@ -36,7 +36,7 @@ export function HistoryView({ history }: { history: HistoryEntry[] }) {
         {history.map((entry) => (
           <article
             key={entry.source_uid}
-            className="rounded-[22px] border border-[#e6e9ef] bg-white p-5 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-6"
+            className="rounded-[22px] border border-[#e6e9ef] bg-white p-3.5 shadow-[0_15px_40px_rgba(38,51,77,0.06)] sm:p-6"
           >
             <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
@@ -63,13 +63,13 @@ export function HistoryView({ history }: { history: HistoryEntry[] }) {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
               {entry.board.map((option, index) => {
                 const isMarked = entry.marked_ids.includes(option.id);
                 return (
                   <div
                     key={`${entry.source_uid}-${option.id}-${index}`}
-                    className={`flex min-h-[58px] items-center justify-center rounded-xl border p-2 text-center text-[10px] font-bold leading-[1.35] sm:min-h-[72px] sm:text-[11px] ${
+                    className={`flex min-h-[48px] items-center justify-center rounded-xl border p-1.5 text-center text-[10px] font-bold leading-[1.25] sm:min-h-[72px] sm:p-2 sm:text-[11px] sm:leading-[1.35] ${
                       isMarked
                         ? "border-[#2144d3] bg-[#2144d3] text-white"
                         : "border-[#e5e9ef] bg-[#fbfcfd] text-[#354154]"
@@ -86,4 +86,3 @@ export function HistoryView({ history }: { history: HistoryEntry[] }) {
     </section>
   );
 }
-
