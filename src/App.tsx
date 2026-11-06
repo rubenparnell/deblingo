@@ -837,7 +837,7 @@ function App() {
         ) : view === "history" ? (
           <HistoryView history={history} />
         ) : view === "leaderboard" ? (
-          <LeaderboardPage onError={setError} />
+          <LeaderboardPage isAdmin={isAdmin} onError={setError} />
         ) : view === "profile" && user ? (
           <ProfileView
             user={user}

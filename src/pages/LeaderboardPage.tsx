@@ -1,12 +1,22 @@
 import { Fragment, useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import type { LeaderboardEntry } from "../types/app";
 
-export function LeaderboardPage({ onError }: { onError: (message: string) => void }) {
+export function LeaderboardPage({
+  isAdmin,
+  onError,
+}: {
+  isAdmin: boolean;
+  onError: (message: string) => void;
+}) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSourceUid, setSelectedSourceUid] = useState("");
+  const [removingPlayer, setRemovingPlayer] = useState<string | null>(null);
+  const [confirmingRemoval, setConfirmingRemoval] = useState<string | null>(
+    null,
+  );
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
     () => new Set(),
   );
@@ -59,6 +69,37 @@ export function LeaderboardPage({ onError }: { onError: (message: string) => voi
         a.username.localeCompare(b.username),
     );
 
+  const removePlayer = async (entry: LeaderboardEntry) => {
+    const playerKey = `${entry.source_uid}-${entry.username}`;
+    setRemovingPlayer(playerKey);
+    const { error } = await supabase.rpc(
+      "admin_remove_lecture_leaderboard_entry",
+      {
+        p_source_uid: entry.source_uid,
+        p_username: entry.username,
+      },
+    );
+    setRemovingPlayer(null);
+    setConfirmingRemoval(null);
+    if (error) {
+      onError(error.message);
+      return;
+    }
+
+    setEntries((current) =>
+      current.filter(
+        (currentEntry) =>
+          currentEntry.source_uid !== entry.source_uid ||
+          currentEntry.username !== entry.username,
+      ),
+    );
+    setExpandedPlayers((current) => {
+      const next = new Set(current);
+      next.delete(playerKey);
+      return next;
+    });
+  };
+
   return (
     <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
       <div className="mb-8">
@@ -105,7 +146,9 @@ export function LeaderboardPage({ onError }: { onError: (message: string) => voi
       ) : (
         <div className="overflow-hidden rounded-2xl border border-[#e6e9ef] bg-white shadow-[0_15px_40px_rgba(38,51,77,0.06)]">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
+            <table
+              className={`w-full ${isAdmin ? "min-w-[560px]" : "min-w-[480px]"} text-left text-sm`}
+            >
               <thead className="bg-[#f7f8fb] text-[10px] uppercase tracking-wider text-[#8994a6]">
                 <tr>
                   <th scope="col" className="px-5 py-4 font-bold">
@@ -120,6 +163,11 @@ export function LeaderboardPage({ onError }: { onError: (message: string) => voi
                   <th scope="col" className="px-5 py-4 text-right font-bold">
                     Squares
                   </th>
+                  {isAdmin && (
+                    <th scope="col" className="px-5 py-4">
+                      <span className="sr-only">Admin actions</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e7eaf0]">
@@ -163,10 +211,66 @@ export function LeaderboardPage({ onError }: { onError: (message: string) => voi
                         <td className="px-5 py-4 text-right font-semibold">
                           {entry.marked_squares}
                         </td>
+                        {isAdmin && (
+                          <td className="px-5 py-3 text-right">
+                            <button
+                              type="button"
+                              aria-label={`Remove ${entry.username} from this lecture's leaderboard`}
+                              title="Remove player from this lecture"
+                              disabled={removingPlayer === playerKey}
+                              onClick={() => setConfirmingRemoval(playerKey)}
+                              className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        )}
                       </tr>
+                      {confirmingRemoval === playerKey && (
+                        <tr>
+                          <td
+                            colSpan={isAdmin ? 5 : 4}
+                            className="bg-[#fff8f8] px-5 py-4"
+                          >
+                            <div
+                              role="group"
+                              aria-label={`Confirm removal of ${entry.username}`}
+                              className="flex flex-wrap items-center justify-between gap-3"
+                            >
+                              <p className="text-xs font-medium text-[#8f3535]">
+                                Remove {entry.username} from this lecture? Their
+                                history for this lecture will be deleted.
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={removingPlayer === playerKey}
+                                  onClick={() => void removePlayer(entry)}
+                                  className="rounded-lg bg-[#c43d3d] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#a92f2f] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {removingPlayer === playerKey
+                                    ? "Removing…"
+                                    : "Confirm removal"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={removingPlayer === playerKey}
+                                  onClick={() => setConfirmingRemoval(null)}
+                                  className="rounded-lg border border-[#e1e6ee] bg-white px-3 py-2 text-xs font-bold text-[#59667c] transition hover:bg-[#f7f8fb] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={4} className="bg-[#f7f8fb] px-5 py-5">
+                          <td
+                            colSpan={isAdmin ? 5 : 4}
+                            className="bg-[#f7f8fb] px-5 py-5"
+                          >
                             <p className="mb-3 text-xs font-bold text-[#59667c]">
                               {entry.username}&apos;s board
                             </p>
@@ -203,4 +307,3 @@ export function LeaderboardPage({ onError }: { onError: (message: string) => voi
     </section>
   );
 }
-
