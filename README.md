@@ -14,7 +14,7 @@ Team bingo built with Vite, React, Tailwind CSS, and Supabase.
 
 3. In the Supabase dashboard, open **SQL Editor**, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This creates the tables, starter options, authentication trigger, and row-level security policies.
 
-   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), [`supabase/history-migration.sql`](./supabase/history-migration.sql), and [`supabase/suggestions-migration.sql`](./supabase/suggestions-migration.sql) instead.
+   If you already ran the original schema, run [`supabase/username-migration.sql`](./supabase/username-migration.sql), [`supabase/remove-categories.sql`](./supabase/remove-categories.sql), [`supabase/lectures-migration.sql`](./supabase/lectures-migration.sql), [`supabase/history-migration.sql`](./supabase/history-migration.sql), [`supabase/suggestions-migration.sql`](./supabase/suggestions-migration.sql), and [`supabase/difficulty-migration.sql`](./supabase/difficulty-migration.sql) instead.
 
 4. To disable email confirmation for now, open **Authentication → Providers → Email** in Supabase, turn off **Confirm email**, and save. New accounts will be signed in immediately after signup.
 
@@ -76,3 +76,5 @@ Each lecture gets one stable randomized board, generated and saved when its play
 The **History** view stores each logged-in user's lecture board, marked squares, and score in Supabase while the lecture is playable. The score is updated after each mark or unmark and is final once the playable window closes. Guests get the same history experience in their current browser using local storage.
 
 Signed-in non-admin users can open **Suggest options** to submit board ideas. Admins review pending suggestions in **Manage options** and can accept them into the board or reject them.
+
+Admins can rank each option as **Free**, **Common**, or **Rare**, and set the difficulty mix for new boards. The default mix is 1 Free, 15 Common, and 9 Rare. Difficulty labels are not shown on the player board.
