@@ -1,0 +1,178 @@
+import type { KeyboardEvent } from "react";
+import { ClipboardList, Plus, Trash2 } from "lucide-react";
+import { DifficultySettings } from "../components/DifficultySettings";
+import { SuggestionList } from "../components/SuggestionList";
+import type { BoardComposition, BoardOption, Difficulty, Suggestion } from "../types/app";
+
+export function AdminView({
+  options,
+  newOption,
+  setNewOption,
+  addOption,
+  deleteOption,
+  uploadLectures,
+  suggestions,
+  reviewSuggestion,
+  composition,
+  updateComposition,
+  updateDifficulty,
+}: {
+  options: BoardOption[];
+  newOption: string;
+  setNewOption: (value: string) => void;
+  addOption: () => void;
+  deleteOption: (id: number) => void;
+  uploadLectures: (file: File) => void;
+  suggestions: Suggestion[];
+  reviewSuggestion: (
+    suggestion: Suggestion,
+    status: "accepted" | "rejected",
+  ) => void;
+  composition: BoardComposition;
+  updateComposition: (composition: BoardComposition) => void;
+  updateDifficulty: (id: number, difficulty: Difficulty) => void;
+}) {
+  const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      addOption();
+    }
+  };
+  return (
+    <section className="mx-auto max-w-[1050px] px-5 py-8 sm:px-10 lg:px-14">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2144d3]">
+            Admin controls
+          </p>
+          <h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e]">
+            Shape your board.
+          </h2>
+          <p className="mt-2 text-[13px] text-[#748096]">
+            Add prompts your team will instantly recognize.
+          </p>
+        </div>
+        <div className="hidden rounded-xl bg-[#eef2ff] px-4 py-3 text-right sm:block">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8998d1]">
+            Available prompts
+          </p>
+          <p className="text-xl font-extrabold text-[#2144d3]">
+            {options.length}
+          </p>
+        </div>
+      </div>
+      <SuggestionList
+        suggestions={suggestions.filter(
+          (suggestion) => suggestion.status === "pending",
+        )}
+        reviewSuggestion={reviewSuggestion}
+      />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[350px_1fr]">
+        <div className="h-fit rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+          <div className="mb-5 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef2ff] text-[#2144d3]">
+              <Plus size={16} />
+            </div>
+            <div>
+              <h3 className="text-[13px] font-bold">Add an option</h3>
+              <p className="text-[11px] text-[#9aa4b4]">
+                It will appear on future boards.
+              </p>
+            </div>
+          </div>
+          <label className="mb-2 block text-[11px] font-bold text-[#59667c]">
+            Prompt
+          </label>
+          <textarea
+            value={newOption}
+            onChange={(event) => setNewOption(event.target.value)}
+            onKeyDown={submitOnEnter}
+            placeholder="e.g. 'Alphabets'"
+            rows={4}
+            className="w-full resize-none rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px] outline-none transition placeholder:text-[#b2bac7] focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
+          />
+          <button
+            onClick={addOption}
+            disabled={!newOption.trim()}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2144d3] py-3 text-[12px] font-bold text-white transition hover:bg-[#1738bd] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus size={15} /> Add to board
+          </button>
+        </div>
+        <div className="rounded-2xl border border-[#e4e8ef] bg-white shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+          <div className="flex items-center justify-between border-b border-[#edf0f4] px-5 py-4">
+            <div>
+              <h3 className="text-[13px] font-bold">Board options</h3>
+              <p className="mt-0.5 text-[11px] text-[#9aa4b4]">
+                Rank each option and choose the mix used for new boards.
+              </p>
+            </div>
+            <span className="rounded-lg bg-[#f6f7fa] px-2.5 py-1 text-[10px] font-bold text-[#8d98a9]">
+              {options.length} total
+            </span>
+          </div>
+          <div className="divide-y divide-[#f0f2f5]">
+            {options.map((option) => (
+              <div
+                key={option.id}
+                className="flex items-center gap-3 px-5 py-3.5"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f3f5ff] text-[#2144d3]">
+                  <ClipboardList size={14} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-semibold text-[#354154]">
+                    {option.label}
+                  </p>
+                </div>
+                <select
+                  value={option.difficulty}
+                  onChange={(event) =>
+                    updateDifficulty(
+                      option.id,
+                      event.target.value as Difficulty,
+                    )
+                  }
+                  className="rounded-lg border border-[#e1e6ee] bg-[#fbfcfd] px-2 py-1.5 text-[11px] font-semibold text-[#59667c]"
+                  aria-label={`Difficulty for ${option.label}`}
+                >
+                  <option value="free">Free</option>
+                  <option value="common">Common</option>
+                  <option value="rare">Rare</option>
+                </select>
+                <button
+                  aria-label={`Delete ${option.label}`}
+                  onClick={() => deleteOption(option.id)}
+                  className="rounded-lg p-2 text-[#b0b8c5] transition hover:bg-[#fff1f1] hover:text-[#d55252]"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <DifficultySettings
+        composition={composition}
+        updateComposition={updateComposition}
+      />
+      <div className="mt-6 rounded-2xl border border-[#e4e8ef] bg-white p-5 shadow-[0_10px_30px_rgba(38,51,77,0.04)]">
+        <h3 className="text-[13px] font-bold">Lecture calendar</h3>
+        <p className="mt-1 text-[11px] text-[#9aa4b4]">
+          Upload an ICS file. Events containing both “discrete” and “lecture” in
+          the title will be saved.
+        </p>
+        <input
+          type="file"
+          accept=".ics,text/calendar"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) uploadLectures(file);
+            event.currentTarget.value = "";
+          }}
+          className="mt-4 block w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-[12px]"
+        />
+      </div>
+    </section>
+  );
+}
