@@ -15,3 +15,16 @@ export function getPlayableWindow(lecture: Lecture) {
     : null;
   return { start, end };
 }
+
+export function formatLectureDate(date: Date | string) {
+  return new Date(date).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+export function formatLectureDay(date: Date | string) {
+  return new Date(date).toLocaleDateString(undefined, {
+    dateStyle: "medium",
+  });
+}

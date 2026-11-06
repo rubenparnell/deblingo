@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { formatLectureDay } from "../lib/lectures";
 import type { LeaderboardEntry } from "../types/app";
 
 export function LeaderboardPage({
@@ -129,7 +130,7 @@ export function LeaderboardPage({
         >
           {lectures.map((lecture) => (
             <option key={lecture.source_uid} value={lecture.source_uid}>
-              {lecture.title}: {new Date(lecture.starts_at).toLocaleDateString()}
+              {lecture.title}: {formatLectureDay(lecture.starts_at)}
             </option>
           ))}
           {!lectures.length && <option value="">No lectures available</option>}

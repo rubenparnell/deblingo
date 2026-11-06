@@ -133,6 +133,29 @@ textarea:focus-visible {
   color: #cbd5e1;
 }
 
+.dark-theme .text-\[\#2144d3\] {
+  color: #93c5fd;
+}
+
+.dark-theme .text-\[\#253354\],
+.dark-theme .text-\[\#7180a2\],
+.dark-theme .text-\[\#7b87ac\],
+.dark-theme .text-\[\#8998d1\] {
+  color: #cbd5e1;
+}
+
+.dark-theme .text-\[\#8f3535\] {
+  color: #fca5a5;
+}
+
+.dark-theme .text-\[\#9a6b13\] {
+  color: #fcd34d;
+}
+
+.dark-theme .text-\[\#d55252\] {
+  color: #fca5a5;
+}
+
 .dark-theme .text-\[\#748096\],
 .dark-theme .text-\[\#7b879a\],
 .dark-theme .text-\[\#8994a6\],

@@ -1,5 +1,6 @@
 import { History as HistoryIcon } from "lucide-react";
 import { getCompletedLines } from "../lib/board";
+import { formatLectureDate } from "../lib/lectures";
 import type { HistoryEntry } from "../types/app";
 
 export function HistoryView({ history }: { history: HistoryEntry[] }) {
@@ -42,7 +43,7 @@ export function HistoryView({ history }: { history: HistoryEntry[] }) {
               <div>
                 <h3 className="text-lg font-extrabold">{entry.title}</h3>
                 <p className="mt-1 text-xs text-[#748096]">
-                  {new Date(entry.starts_at).toLocaleString()}
+                  {formatLectureDate(entry.starts_at)}
                 </p>
               </div>
               <div className="rounded-xl bg-[#eef2ff] px-4 py-2 text-center">

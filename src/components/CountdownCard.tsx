@@ -1,5 +1,9 @@
 import type { Lecture } from "../types/app";
-import { getLectureTiming, getPlayableWindow } from "../lib/lectures";
+import {
+  formatLectureDate,
+  getLectureTiming,
+  getPlayableWindow,
+} from "../lib/lectures";
 
 export function CountdownCard({
   event,
@@ -57,18 +61,15 @@ export function CountdownCard({
     return (
       <div className="flex min-h-[calc(100dvh-88px)] items-center justify-center py-10">
         <div className="w-full max-w-[760px] rounded-[30px] bg-[#2144d3] px-6 py-14 text-center shadow-[0_20px_60px_rgba(33,68,211,0.24)] sm:px-10 sm:py-20">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">
+          <h2 className="text-3xl font-extrabold text-white sm:text-3xl">
             {isClosing
               ? "Board closing soon"
               : isLive
                 ? "Lecture in progress"
-                : "Next discrete lecture"}
-          </p>
-          <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.04em] text-white sm:text-3xl">
-            {event.title}
+                : "Next Discrete Lecture"}
           </h2>
           <p className="mt-3 text-sm text-white/80">
-            {target.toLocaleString()}
+            {formatLectureDate(target)}
           </p>
           <div className="mt-10 flex justify-center gap-2 text-white sm:gap-4">
             <CountdownUnit value={days} label="Days" />
@@ -76,10 +77,10 @@ export function CountdownCard({
             <CountdownUnit value={minutes} label="Minutes" />
             <CountdownUnit value={seconds} label="Seconds" />
           </div>
-          <p className="mt-8 text-xs font-medium text-white/70">
+          <p className="mt-8 text-s font-medium text-white/70">
             {isClosing
               ? "The board will close when this countdown reaches zero."
-              : "The board will be available during the lecture window."}
+              : "The board will be available between 5 minutes before and 5 minutes after the lecture."}
           </p>
         </div>
       </div>
@@ -96,7 +97,7 @@ export function CountdownCard({
         </p>
         <p className="mt-1 text-sm font-bold text-[#253354]">{event.title}</p>
         <p className="mt-1 text-[11px] text-[#7180a2]">
-          {target.toLocaleString()}
+          {formatLectureDate(target)}
         </p>
       </div>
       <div className="flex items-baseline gap-1 font-mono tabular-nums text-[#2144d3]">
