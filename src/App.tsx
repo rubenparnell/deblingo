@@ -755,13 +755,12 @@ function App() {
               <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                   <h2 className="text-[32px] font-extrabold tracking-[-0.055em] text-[#15202e] sm:text-[40px]">
-                    Find the fun in
                     <br />
                     <span className="text-[#2144d3]">deblingo.</span>
                   </h2>
                   <p className="mt-3 max-w-[440px] text-[13px] leading-6 text-[#748096]">
                     Mark a square whenever you spot it. Get five in a row to
-                    call deblingo!
+                    call <em className="italic">deblingo</em>!
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
