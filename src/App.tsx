@@ -743,7 +743,11 @@ function App() {
 
         {error && <Alert message={error} onDismiss={() => setError("")} />}
         {view === "board" ? (
-          <section className="mx-auto max-w-[1120px] px-5 py-8 sm:px-10 lg:px-14">
+          <section
+            className={`mx-auto max-w-[1120px] px-5 sm:px-10 lg:px-14 ${
+              !boardAvailable && nextLecture ? "" : "py-8"
+            }`}
+          >
             {!boardAvailable && nextLecture && (
               <CountdownCard event={nextLecture} now={clock} emptyState />
             )}

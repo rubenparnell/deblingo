@@ -55,7 +55,7 @@ export function CountdownCard({
     );
   if (emptyState)
     return (
-      <div className="flex min-h-[calc(100vh-88px)] items-center justify-center py-10">
+      <div className="flex min-h-[calc(100dvh-88px)] items-center justify-center py-10">
         <div className="w-full max-w-[760px] rounded-[30px] bg-[#2144d3] px-6 py-14 text-center shadow-[0_20px_60px_rgba(33,68,211,0.24)] sm:px-10 sm:py-20">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">
             {isClosing
@@ -127,4 +127,3 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
     </div>
   );
 }
-
