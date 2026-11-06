@@ -417,7 +417,9 @@ function App() {
       board,
       marked_ids: marked,
       score: marked.length,
-      completed_lines: getCompletedLines(board, marked),
+      completed_lines: marked.length
+        ? getCompletedLines(board, marked)
+        : 0,
     };
 
     if (user) {
