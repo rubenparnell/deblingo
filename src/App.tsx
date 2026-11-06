@@ -14,6 +14,7 @@ import {
   ClipboardList,
   History as HistoryIcon,
   LayoutDashboard,
+  LogIn,
   LogOut,
   Plus,
   RotateCcw,
@@ -448,7 +449,7 @@ function App() {
     >
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[252px] flex-col border-r border-[#e7eaf0] bg-white lg:flex">
         <div className="flex h-[88px] items-center gap-3 border-b border-[#e7eaf0] px-7">
-          <img id="logo" src="/src/assets/icon.png"/>
+          <img id="logo" src="/src/assets/icon.png" />
           <div>
             <p className="text-[17px] font-bold tracking-[-0.03em]">deblingo</p>
           </div>
@@ -567,10 +568,12 @@ function App() {
               </div>
             ) : (
               <button
+                aria-label="Guest mode. Click to sign in or create an account"
                 onClick={() => setView("admin")}
-                className="rounded-xl border border-[#e3e7ed] px-3 py-2 text-[12px] font-semibold text-[#7b879a] transition hover:border-[#b8c4ee] hover:text-[#2144d3]"
+                className="flex items-center gap-2 rounded-xl bg-[#2144d3] px-3.5 py-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_rgba(33,68,211,0.18)] transition hover:bg-[#1738bd]"
               >
-                Guest
+                <LogIn size={14} />
+                Sign in
               </button>
             )}
           </div>
@@ -912,15 +915,20 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
             </>
           )}
           <label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
-            Email
+            {mode === "signin" ? "Username or email" : "Email"}
           </label>
           <input
             required
-            type="email"
+            type={mode === "signin" ? "text" : "email"}
+            autoComplete={mode === "signin" ? "username" : "email"}
             value={login}
             onChange={(event) => setLogin(event.target.value)}
             className="w-full rounded-xl border border-[#e1e6ee] bg-[#fbfcfd] p-3 text-sm outline-none focus:border-[#8193e8] focus:ring-2 focus:ring-[#e7ebff]"
-            placeholder="you@company.com"
+            placeholder={
+              mode === "signin"
+                ? "your_username or you@company.com"
+                : "you@company.com"
+            }
           />
           <label className="mb-2 mt-4 block text-xs font-bold text-[#59667c]">
             Password
