@@ -1011,9 +1011,6 @@ function AuthView({ onSignedIn }: { onSignedIn: (user: User) => void }) {
           </div>
           <div>
             <p className="text-[18px] font-bold tracking-[-0.03em]">deblingo</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.17em] text-[#9ba4b5]">
-              team games
-            </p>
           </div>
         </div>
         <div className="mb-6 grid grid-cols-2 rounded-xl bg-[#f3f5fa] p-1">
